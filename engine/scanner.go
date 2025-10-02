@@ -52,6 +52,7 @@ var languages = map[string]Language{
 	".cs":     Csharp,
 	".cshtml": Csharp,
 	".aspx":   Csharp,
+	".config": Csharp,
 
 	".swift": Ios,
 	".obj":   Ios,
