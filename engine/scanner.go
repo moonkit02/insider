@@ -6,10 +6,10 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strconv"
 	"sync"
 
+	"github.com/dlclark/regexp2"
 	"github.com/insidersec/insider/report"
 )
 
@@ -64,7 +64,7 @@ type scanner struct {
 	mutext      *sync.Mutex
 	wg          *sync.WaitGroup
 	result      *Result
-	exclude     []*regexp.Regexp
+	exclude     []*regexp2.Regexp
 	ruleBuilder RuleBuilder
 	ruleSet     RuleSet
 	errors      []error
@@ -196,7 +196,7 @@ func (s *scanner) language(file string) (Language, error) {
 
 func (s *scanner) ignore(path string) bool {
 	for _, re := range s.exclude {
-		if re.MatchString(path) {
+		if found, _ := re.MatchString(path); found {
 			return true
 		}
 	}

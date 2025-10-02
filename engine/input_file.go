@@ -5,14 +5,17 @@ import (
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
-	"regexp"
 	"sort"
 	"strings"
+
+	"regexp"
+
+	"github.com/dlclark/regexp2"
 )
 
 var (
-	newlineFinder = regexp.MustCompile("\x0a") // \n ASCII
-	scopeFinder   = regexp.MustCompile(`(.*private.*\s*|.*public.*\s*|.*fun.*\s*)(?:{|=)`)
+	newlineFinder = regexp2.MustCompile("\x0a", 0) // \n ASCII
+	scopeFinder   = regexp2.MustCompile(`(.*private.*\s*|.*public.*\s*|.*fun.*\s*)(?:{|=)`, 0)
 )
 
 // InputFile represents a file to be analyzed
@@ -45,8 +48,10 @@ func NewInputFile(dir, filename string) (InputFile, error) {
 }
 
 func NewInputFileWithContent(dir, filename string, content []byte) (InputFile, error) {
-	allNewlineIndexes := newlineFinder.FindAllIndex(content, -1)
-	allScopesIndexes := scopeFinder.FindAllIndex(content, -1)
+	another_newlineFinder, _ := regexp.Compile(newlineFinder.String())
+	allNewlineIndexes := another_newlineFinder.FindAllIndex(content, -1)
+	another_scopeFinder, _ := regexp.Compile(scopeFinder.String())
+	allScopesIndexes := another_scopeFinder.FindAllIndex(content, -1)
 
 	newlineLastIndexes := make([]int, 0, len(allNewlineIndexes))
 	for _, newLineLastIndex := range allNewlineIndexes {

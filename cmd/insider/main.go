@@ -8,11 +8,11 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"regexp"
 	"runtime"
 	"strings"
 	"time"
 
+	"github.com/dlclark/regexp2"
 	"github.com/insidersec/insider"
 	"github.com/insidersec/insider/engine"
 	"github.com/insidersec/insider/rule"
@@ -177,11 +177,11 @@ func main() {
 
 }
 
-func buildExpressions(expressions []string) ([]*regexp.Regexp, error) {
-	regexps := make([]*regexp.Regexp, 0, len(expressions))
+func buildExpressions(expressions []string) ([]*regexp2.Regexp, error) {
+	regexps := make([]*regexp2.Regexp, 0, len(expressions))
 
 	for _, expr := range expressions {
-		re, err := regexp.Compile(expr)
+		re, err := regexp2.Compile(expr, 0)
 		if err != nil {
 			return nil, fmt.Errorf("compile %s: %w", expr, err)
 		}

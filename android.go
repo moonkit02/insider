@@ -8,6 +8,7 @@ import (
 	"os"
 	"regexp"
 
+	"github.com/dlclark/regexp2"
 	"github.com/insidersec/insider/engine"
 	"github.com/insidersec/insider/report"
 )
@@ -18,11 +19,11 @@ const (
 )
 
 var (
-	manifestFilter = regexp.MustCompile(`AndroidManifest\.xml`)
-	gradleFilter   = regexp.MustCompile(`dependencies\w*\.gradle`)
+	manifestFilter = regexp2.MustCompile(`AndroidManifest\.xml`, 0)
+	gradleFilter   = regexp2.MustCompile(`dependencies\w*\.gradle`, 0)
 
-	launcherActivity = regexp.MustCompile(`android.intent.category.LAUNCHER`)
-	mainActivity     = regexp.MustCompile(`android.intent.action.MAIN`)
+	launcherActivity = regexp2.MustCompile(`android.intent.category.LAUNCHER`, 0)
+	mainActivity     = regexp2.MustCompile(`android.intent.action.MAIN`, 0)
 
 	extractGradleVersionName       = regexp.MustCompile(`versionName\s+(?:=|)(\d*\.\d*\.\d*)`)
 	extractGradleVersionNumber     = regexp.MustCompile(`versionNumber\s+(?:\=\s|)(?:(?:(?:['"]|)(.*)(?:['"]|))|\d*)`)
@@ -171,7 +172,7 @@ func (a AndroidAnalyzer) fillManifestPermissions(data []report.ManifestPermissio
 func (a AndroidAnalyzer) fillMainManifest(manifest Manifest, r *report.AndroidReporter) {
 	for _, activity := range manifest.Application.Activities {
 		for _, intentFilter := range activity.IntentFilter.Actions {
-			if mainActivity.MatchString(intentFilter.Name) {
+			if found, _ := mainActivity.MatchString(intentFilter.Name); found {
 				r.AndroidInfo.MainActivity = activity.Name
 			}
 		}
@@ -196,15 +197,19 @@ func (a AndroidAnalyzer) fillMainManifest(manifest Manifest, r *report.AndroidRe
 }
 
 func isMainPackage(content string) bool {
-	return mainActivity.MatchString(content) && launcherActivity.MatchString(content)
+	main_found, _ := mainActivity.MatchString(content)
+	launcher_found, _ := launcherActivity.MatchString(content)
+	return main_found && launcher_found
 }
 
 func findGradleFiles(filename string) bool {
-	return gradleFilter.MatchString(filename)
+	found, _ := gradleFilter.MatchString(filename)
+	return found
 }
 
 func findManifests(filename string) bool {
-	return manifestFilter.MatchString(filename)
+	found, _ := manifestFilter.MatchString(filename)
+	return found
 }
 
 // Permission is a AndroidManifest permission entry

@@ -2,9 +2,9 @@ package engine_test
 
 import (
 	"context"
-	"regexp"
 	"testing"
 
+	"github.com/dlclark/regexp2"
 	"github.com/insidersec/insider/engine"
 	"github.com/insidersec/insider/testutil"
 	"github.com/stretchr/testify/assert"
@@ -21,14 +21,14 @@ func TestEngineScan(t *testing.T) {
 	}{
 		{
 			name:            "Test without ignore files",
-			engine:          engine.New(testutil.NewTestRuleBuilder(t), []*regexp.Regexp{}, 4, testutil.NewTestLogger(t)),
+			engine:          engine.New(testutil.NewTestRuleBuilder(t), []*regexp2.Regexp{}, 4, testutil.NewTestLogger(t)),
 			lines:           118,
 			vulnerabilities: 3,
 		},
 		{
 			name: "Test with ignore files",
-			engine: engine.New(testutil.NewTestRuleBuilder(t), []*regexp.Regexp{
-				regexp.MustCompile("ios/*"),
+			engine: engine.New(testutil.NewTestRuleBuilder(t), []*regexp2.Regexp{
+				regexp2.MustCompile("ios/*", 0),
 			}, 4, testutil.NewTestLogger(t)),
 			lines:           70,
 			vulnerabilities: 3,

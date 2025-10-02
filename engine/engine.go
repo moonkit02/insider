@@ -3,20 +3,20 @@ package engine
 import (
 	"context"
 	"log"
-	"regexp"
 	"sync"
 
+	"github.com/dlclark/regexp2"
 	"github.com/insidersec/insider/report"
 )
 
 type Engine struct {
 	logger      *log.Logger
-	exclude     []*regexp.Regexp
+	exclude     []*regexp2.Regexp
 	ruleBuilder RuleBuilder
 	jobs        int
 }
 
-func New(ruleBuilder RuleBuilder, exclude []*regexp.Regexp, jobs int, logger *log.Logger) *Engine {
+func New(ruleBuilder RuleBuilder, exclude []*regexp2.Regexp, jobs int, logger *log.Logger) *Engine {
 	return &Engine{
 		logger:      logger,
 		exclude:     exclude,

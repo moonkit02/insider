@@ -2,9 +2,9 @@ package testutil
 
 import (
 	"context"
-	"regexp"
 	"testing"
 
+	"github.com/dlclark/regexp2"
 	"github.com/insidersec/insider/engine"
 	"github.com/insidersec/insider/rule"
 )
@@ -26,13 +26,13 @@ func NewTestRuleBuilder(t testing.TB) engine.RuleBuilder {
 func NewTestRules(t testing.TB) []engine.Rule {
 	return []engine.Rule{
 		rule.Rule{
-			ExactMatch:  regexp.MustCompile(`(password\s*=\s*['|"][\w\!\@\#\$\%\&\*\(\)\s]+['|"])`),
+			ExactMatch:  regexp2.MustCompile(`(password\s*=\s*['|"][\w\!\@\#\$\%\&\*\(\)\s]+['|"])`, 0),
 			Description: "foo bar baz",
 			AverageCVSS: 7,
 			CWE:         "CWE-312",
 		},
 		rule.Rule{
-			Or:          []*regexp.Regexp{regexp.MustCompile("_srand"), regexp.MustCompile("_random")},
+			Or:          []*regexp2.Regexp{regexp2.MustCompile("_srand", 0), regexp2.MustCompile("_random", 0)},
 			Description: "foo bar baz",
 			AverageCVSS: 4.5,
 			CWE:         "CWE-338",

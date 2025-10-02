@@ -3,6 +3,7 @@ package rule
 import (
 	"regexp"
 
+	"github.com/dlclark/regexp2"
 	"github.com/insidersec/insider/engine"
 )
 
@@ -16,25 +17,28 @@ type Rule struct {
 	Description   string
 	Recomendation string
 
+	Auxiliary []*regexp2.Regexp
+
+	PatternInside *regexp2.Regexp
 	// And evaluate that each expresion on list is true
-	And []*regexp.Regexp
+	And []*regexp2.Regexp
 
 	// Or evaluate that at least one expresion is true
-	Or []*regexp.Regexp
+	Or []*regexp2.Regexp
 
 	// ExactMatch evaluate that expresion is true
-	ExactMatch *regexp.Regexp
+	ExactMatch *regexp2.Regexp
 
 	// NotAnd evaluate with ExactMatch, AndExpressions and OrExpressions .
 	// If all expresions on list is true the match statement turn to false
-	NotAnd []*regexp.Regexp
+	NotAnd []*regexp2.Regexp
 
 	// NotOr evaluate with ExactMatch, AndExpressions and OrExpressions.
 	// If at least one expresion on list is true the match turn to false
-	NotOr []*regexp.Regexp
+	NotOr []*regexp2.Regexp
 
 	// NotMatch evaluate that expresion is false
-	NotMatch *regexp.Regexp
+	NotMatch *regexp2.Regexp
 }
 
 func (r Rule) Match(inputFile engine.InputFile) ([]engine.Issue, error) {
@@ -46,6 +50,16 @@ func (r Rule) Match(inputFile engine.InputFile) ([]engine.Issue, error) {
 		CVSS:          r.AverageCVSS,
 		Description:   r.Description,
 		Recomendation: r.Recomendation,
+	}
+
+	if r.HaveAuxiliary() {
+		hasAux, err := evaluateAuxiliary(inputFile.Content, r)
+		if err != nil {
+			return nil, err
+		}
+		if !hasAux {
+			return []engine.Issue{}, nil
+		}
 	}
 
 	if r.IsAndMatch() {
@@ -100,11 +114,46 @@ func (r Rule) IsNotMatch() bool {
 	return r.NotMatch != nil
 }
 
+func (r Rule) HaveAuxiliary() bool {
+	return len(r.Auxiliary) != 0
+}
+
+func (r Rule) HavePatternInside() bool {
+	return r.PatternInside != nil
+}
+
+func evaluateAuxiliary(content string, rule Rule) (bool, error) {
+	for _, expr := range rule.Auxiliary {
+		if expr == nil {
+			continue
+		}
+		another_expr, _ := regexp.Compile(expr.String())
+		results := another_expr.FindAllStringIndex(content, -1)
+		if len(results) == 0 {
+			return false, nil
+		}
+	}
+	return true, nil
+}
+
+func evaluatePatternInside(content string, rule Rule) ([][]int, error) {
+	if rule.PatternInside == nil {
+		return nil, nil
+	}
+	another_pattern, _ := regexp.Compile(rule.PatternInside.String())
+	results := another_pattern.FindAllStringIndex(content, -1)
+	if len(results) == 0 {
+		return nil, nil
+	}
+	return results, nil
+}
+
 func evaluateNotANDClause(content string, rule Rule) (bool, error) {
 	finds := 0
 
 	for _, expr := range rule.NotAnd {
-		results := expr.FindAllStringIndex(content, -1)
+		another_expr, _ := regexp.Compile(expr.String())
+		results := another_expr.FindAllStringIndex(content, -1)
 
 		if results != nil {
 			finds++
@@ -117,7 +166,7 @@ func evaluateNotANDClause(content string, rule Rule) (bool, error) {
 func evaluateNotORClause(content string, rule Rule) (bool, error) {
 	for _, expr := range rule.NotOr {
 		// If already find something, don't need to evaluate the other one.
-		if expr.MatchString(content) {
+		if found, _ := expr.MatchString(content); found {
 			return false, nil
 		}
 	}
@@ -133,10 +182,11 @@ func evaluateNotClauses(fileContent string, rule Rule) (bool, error) {
 	return true, nil
 }
 
-func runNotRule(inputFile engine.InputFile, expr *regexp.Regexp, info engine.Info, rule Rule) ([]engine.Issue, error) {
+func runNotRule(inputFile engine.InputFile, expr *regexp2.Regexp, info engine.Info, rule Rule) ([]engine.Issue, error) {
 	issues := make([]engine.Issue, 0)
 
-	results := expr.FindAllStringSubmatchIndex(inputFile.Content, -1)
+	another_expr, _ := regexp.Compile(expr.String())
+	results := another_expr.FindAllStringSubmatchIndex(inputFile.Content, -1)
 
 	if results == nil {
 		return []engine.Issue{}, nil
@@ -159,10 +209,11 @@ func runNotRule(inputFile engine.InputFile, expr *regexp.Regexp, info engine.Inf
 	return issues, nil
 }
 
-func runRule(inputFile engine.InputFile, expr *regexp.Regexp, info engine.Info, rule Rule, fn excludeFn) ([]engine.Issue, error) {
+func runRule(inputFile engine.InputFile, expr *regexp2.Regexp, info engine.Info, rule Rule, fn excludeFn) ([]engine.Issue, error) {
 	issues := make([]engine.Issue, 0)
 
-	results := expr.FindAllStringIndex(inputFile.Content, -1)
+	another_expr, _ := regexp.Compile(expr.String())
+	results := another_expr.FindAllStringIndex(inputFile.Content, -1)
 	if results == nil {
 		return []engine.Issue{}, nil
 	}
@@ -195,7 +246,7 @@ func runRule(inputFile engine.InputFile, expr *regexp.Regexp, info engine.Info, 
 	return issues, nil
 }
 
-func runSingleRule(inputFile engine.InputFile, expr *regexp.Regexp, info engine.Info, r Rule) ([]engine.Issue, error) {
+func runSingleRule(inputFile engine.InputFile, expr *regexp2.Regexp, info engine.Info, r Rule) ([]engine.Issue, error) {
 	return runRule(inputFile, expr, info, r, func(content string, r Rule) (bool, error) {
 		return evaluateNotClauses(content, r)
 	})

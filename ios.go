@@ -144,7 +144,9 @@ func (a IOSAnalyzer) analyzePlist(dir string, rep *report.IOSReporter) error {
 	}
 
 	for _, mainAppFile := range mainAppFiles {
-		results := extractBundleID.FindStringSubmatch(mainAppFile.Content)
+
+		another_extractBundleID, _ := regexp.Compile(extractBundleID.String())
+		results := another_extractBundleID.FindStringSubmatch(mainAppFile.Content)
 
 		if results != nil {
 			rep.IOSInfo.BinaryID = results[1]
@@ -282,7 +284,8 @@ func isPodfile(path string) bool {
 	if isMacosx(path) {
 		return false
 	}
-	return podfileFilter.MatchString(path)
+	found := podfileFilter.MatchString(path)
+	return found
 }
 
 func isCartfileResolved(path string) bool {
@@ -290,7 +293,8 @@ func isCartfileResolved(path string) bool {
 	if isMacosx(path) {
 		return false
 	}
-	return cartfileResolverFilter.MatchString(path)
+	found := cartfileResolverFilter.MatchString(path)
+	return found
 }
 
 func isCartfile(path string) bool {
@@ -298,7 +302,8 @@ func isCartfile(path string) bool {
 	if isMacosx(path) {
 		return false
 	}
-	return cartfileFilter.MatchString(path)
+	found := cartfileFilter.MatchString(path)
+	return found
 }
 
 func findInfoFiles(path string) bool {
@@ -306,7 +311,8 @@ func findInfoFiles(path string) bool {
 	if isMacosx(path) {
 		return false
 	}
-	return informativeFilesFilter.MatchString(path)
+	found := informativeFilesFilter.MatchString(path)
+	return found
 }
 
 func findPListFiles(path string) bool {
@@ -315,5 +321,6 @@ func findPListFiles(path string) bool {
 		return false
 	}
 
-	return plistFilesFilter.MatchString(path)
+	found := plistFilesFilter.MatchString(path)
+	return found
 }
