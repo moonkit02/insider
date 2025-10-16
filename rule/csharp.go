@@ -78,48 +78,42 @@ var CsharpRules []engine.Rule = []engine.Rule{
 	// 	Recomendation: "Use secure algorithms like Aes.Create() with a strong key size (e.g., 256-bit) instead of DES.",
 	// },
 
-	// use-ecb-mode
-	Rule{
-		Or: []*regexp2.Regexp{regexp2.MustCompile(`(EncryptEcb|DecryptEcb| = CipherMode.Ecb)`, 0),
-			regexp2.MustCompile(`(?s)(\w+\s*\.\s*Mode\s*=\s*CipherMode\.ECB)`, 0),
-		},
-		CWE:           "CWE-327",
-		AverageCVSS:   5.3,
-		Title:         "Use of Insecure ECB Cipher Mode in EncryptEcb",
-		Severity:      "WARNING",
-		Description:   "Using EncryptEcb with SymmetricAlgorithm, Aes, Rijndael, DES, TripleDES, or RC2 is insecure due to ECB's predictable encryption pattern.",
-		Recomendation: "Use secure cipher modes like CBC or GCM with a random IV instead of ECB.",
-	},
+	// // use-ecb-mode
+	// Rule{
+	// 	Or: []*regexp2.Regexp{
+	// 		regexp2.MustCompile(`(EncryptEcb|DecryptEcb)\s*\([^)]*\)\s*;`, 0),
+	// 		regexp2.MustCompile(`(?s)(\w+\s*\.\s*Mode\s*=\s*CipherMode\.ECB)`, 0),
+	// 	},
+	// 	CWE:           "CWE-327",
+	// 	AverageCVSS:   5.3,
+	// 	Title:         "Use of Insecure ECB Cipher Mode in EncryptEcb",
+	// 	Severity:      "WARNING",
+	// 	Description:   "Using EncryptEcb with SymmetricAlgorithm, Aes, Rijndael, DES, TripleDES, or RC2 is insecure due to ECB's predictable encryption pattern.",
+	// 	Recomendation: "Use secure cipher modes like CBC or GCM with a random IV instead of ECB.",
+	// },
 
 	// // use_weak_rsa_encryption_padding
 	// Rule{
-	// 	PatternInside: regexp2.MustCompile(`(?s)using\s+System\.Security\.Cryptography;.*?\{`, 0),
-	// 	ExactMatch:    regexp2.MustCompile(`(?s)(new\s+(?:RSAPKCS1KeyExchangeFormatter|RSAPKCS1KeyExchangeDeformatter)\s*\([^)]*\))`, 0),
-	// 	CWE:           "CWE-327",
+	// 	Auxiliary:     []*regexp2.Regexp{regexp2.MustCompile(`(?s)using\s+System\.Security\.Cryptography\s*;`, 0)},
+	// 	ExactMatch:    regexp2.MustCompile(`(?s)(new\s+(RSAPKCS1KeyExchangeFormatter|RSAPKCS1KeyExchangeDeformatter)\([^)]*\))`, 0),
+	// 	CWE:           "CWE-780",
 	// 	AverageCVSS:   5.3,
 	// 	Title:         "Use of Deprecated RSAPKCS1 Key Exchange",
 	// 	Severity:      "WARNING",
 	// 	Description:   "Using RSAPKCS1KeyExchangeFormatter or RSAPKCS1KeyExchangeDeformatter is insecure due to vulnerabilities in PKCS#1 v1.5 padding.",
 	// 	Recomendation: "Use modern key exchange mechanisms like ECDH or RSA-OAEP instead of RSAPKCS1.",
-	// 	NotAnd: []*regexp2.Regexp{
-	// 		regexp2.MustCompile(`(?s)new\s+(?:RSAOAEPKeyExchangeFormatter|RSAOAEPKeyExchangeDeformatter)\s*\([^)]*\)`, 0),
-	// 	},
 	// },
 
-	// // web-config-insecure-cookie-settings
-	// Rule{
-	// 	PatternInside: regexp2.MustCompile(`(?s)(?:<httpCookies[^>]*>|<forms[^>]*>|<roleManager[^>]*>).*?</(?:httpCookies|forms|roleManager)>`, 0),
-	// 	ExactMatch:    regexp2.MustCompile(`(?s)((?:requireSSL|cookieRequireSSL)\s*=\s*"(?:false|False|FALSE)")`, 0),
-	// 	CWE:           "CWE-614",
-	// 	AverageCVSS:   3.0,
-	// 	Title:         "Insecure Cookie Settings in web.config",
-	// 	Severity:      "WARNING",
-	// 	Description:   "Cookie Secure flag is disabled (requireSSL='false' or cookieRequireSSL='false'), risking sensitive cookie exposure over plaintext HTTP.",
-	// 	Recomendation: "Set requireSSL='true' and cookieRequireSSL='true' to enforce secure cookie transmission over HTTPS.",
-	// 	NotAnd: []*regexp2.Regexp{
-	// 		regexp2.MustCompile(`(?s)(?:requireSSL|cookieRequireSSL)\s*=\s*"(?:true|True|TRUE)"`, 0),
-	// 	},
-	// },
+	// web-config-insecure-cookie-settings
+	Rule{
+		ExactMatch:    regexp2.MustCompile(`(?i)<\s*(?:httpCookies|forms|roleManager)\b[^>]*(?:requireSSL|cookieRequireSSL)\s*=\s*"(FALSE|False|false)"[^>]*>`, 0),
+		CWE:           "CWE-614",
+		AverageCVSS:   3.0,
+		Title:         "Insecure Cookie Settings in web.config",
+		Severity:      "WARNING",
+		Description:   "Cookie Secure flag is disabled (requireSSL='false' or cookieRequireSSL='false'), risking sensitive cookie exposure over plaintext HTTP.",
+		Recomendation: "Set requireSSL='true' and cookieRequireSSL='true' to enforce secure cookie transmission over HTTPS.",
+	},
 
 	// // structured-logging
 	// Rule{
