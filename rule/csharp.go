@@ -7,15 +7,34 @@ import (
 
 var CsharpRules []engine.Rule = []engine.Rule{
 
+	// // mvc-missing-antiforgery
+	// Rule{
+	// 	Auxiliary: []*regexp2.Regexp{regexp2.MustCompile(`(?m)^\s*using\s+Microsoft\.AspNetCore\.Mvc\s*;`, 0)},
+	// 	And:       []*regexp2.Regexp{regexp2.MustCompile(`(?:\[\s*[A-Za-z][A-Za-z0-9]*\s*(?:\([^)]*\))?\s*\]\s*)*\[\s*Http(?:Post|Put|Delete|Patch)\s*\][\s\S]*?public\s+IActionResult\s+\w+\s*\([^)]*\)\s*\{[\s\S]*?\}`, 0)},
+	// 	NotOr: []*regexp2.Regexp{
+	// 		// [ValidateAntiForgeryToken] public IActionResult Method(...)
+	// 		regexp2.MustCompile(
+	// 			`\[\s*ValidateAntiForgeryToken\s*\](?:\s*\[[^\]]+\])*\s*public\s+IActionResult\s+\w+\s*\([^)]*\)\s*\{[\s\S]*?\}`,
+	// 			0),
+
+	// 		// [Consumes(...)] public IActionResult Method(...)
+	// 		regexp2.MustCompile(
+	// 			`\[\s*Consumes\s*\([^)]*\)\s*\](?:\s*\[[^\]]+\])*\s*public\s+IActionResult\s+\w+\s*\([^)]*\)\s*\{[\s\S]*?\}`,
+	// 			0),
+	// 	},
+	// 	CWE:           "CWE-352",
+	// 	AverageCVSS:   6.5,
+	// 	Description:   "$METHOD is a state-changing MVC method that does not validate the antiforgery token or do strict content-type checking.",
+	// 	Recomendation: "State-changing controller methods should either enforce antiforgery tokens or do strict content-type checking to prevent simple HTTP request types from bypassing CORS preflight controls.",
+	// },
+
 	// // net-webconfig-debug
 	// Rule{
 	// 	PatternInside: regexp2.MustCompile(`(?s)<system\.web>.*?</system\.web>`, 0),
 	// 	ExactMatch:    regexp2.MustCompile(`(?s)(<compilation\s+[^>]*debug\s*=\s*"(?:true|True|TRUE)"[^>]*?(?:\/>|>.*?</compilation>))`, 0),
 	// 	CWE:           "CWE-11",
 	// 	AverageCVSS:   3.0,
-	// 	Title:         "ASP.NET Debug Mode Enabled",
-	// 	Severity:      "WARNING",
-	// 	Description:   "ASP.NET web.config with debug='true' in compilation tag may leak debug information, impacting security and performance.",
+	// 	Description:   "ASP.NET applications built with `debug` set to true in production may leak debug information to attackers. Debug mode also affects performance and reliability. Set `debug` to `false` or remove it from `<compilation... />`",
 	// 	Recomendation: "Set debug='false' or remove the debug attribute in the compilation tag for production environments.",
 	// },
 
@@ -25,18 +44,16 @@ var CsharpRules []engine.Rule = []engine.Rule{
 	// 	ExactMatch:    regexp2.MustCompile(`(?s)(<trace\s+[^>]*enabled\s*=\s*"(?:true|True|TRUE)"[^>]*?(?:\/>|>.*?</trace>))`, 0),
 	// 	CWE:           "CWE-1323",
 	// 	AverageCVSS:   4.0,
-	// 	Title:         "ASP.NET Trace Enabled",
-	// 	Severity:      "WARNING",
-	// 	Description:   "ASP.NET web.config with trace enabled='true' may leak sensitive application information, such as session IDs or stack traces, to attackers.",
+	// 	Description:   "OWASP guidance recommends disabling tracing for production applications to prevent accidental leakage of sensitive application information.",
 	// 	Recomendation: "Set enabled='false' or remove the trace element in production environments to prevent accidental leakage of sensitive data.",
 	// 	NotAnd: []*regexp2.Regexp{
 	// 		regexp2.MustCompile(`(?s)enabled\s*=\s*"(?:false|False|FALSE)"`, 0),
 	// 	},
 	// },
 
-	// // razor-template-injection
+	// // razor-template-injection - need taint
 	// Rule{
-	// 	PatternInside: regexp2.MustCompile(`(?s)\[(?:HttpGet|HttpPost|HttpPut|HttpDelete|HttpPatch)\][\s\n]*public\s+ActionResult\s+\w+\s*\([^)]*string\s+(\w+)[^)]*\)\s*\{.*?\}`, 0),
+	// 	// PatternInside: regexp2.MustCompile(`(?s)\[(?:HttpGet|HttpPost|HttpPut|HttpDelete|HttpPatch)\][\s\n]*public\s+ActionResult\s+\w+\s*\([^)]*string\s+(\w+)[^)]*\)\s*\{.*?\}`, 0),
 	// 	ExactMatch:    regexp2.MustCompile(`(?s)(Razor\.Parse\s*\(\s*\w+\s*,?\s*[^)]*\))`, 0),
 	// 	CWE:           "CWE-94",
 	// 	AverageCVSS:   5.5,
@@ -51,28 +68,28 @@ var CsharpRules []engine.Rule = []engine.Rule{
 
 	// // deprecated-cipher-algorithm
 	// Rule{
-	// 	PatternInside: regexp2.MustCompile(`(?s)using\s+System\.Security\.Cryptography;.*?\{`, 0),
-	// 	ExactMatch:    regexp2.MustCompile(`(?s)(\w+\s*=\s*DES\.Create\s*\(\s*(?:"[^"]*")?\s*\))`, 0),
+	// 	Auxiliary:     []*regexp2.Regexp{regexp2.MustCompile(`(?s)using\s+System\.Security\.Cryptography;.*?\{`, 0)},
+	// 	ExactMatch:    regexp2.MustCompile(`(?s)(\w+\s*=\s*(DES|RC2)\.Create\s*\(\s*(?:"[^"]*")?\s*\))`, 0),
 	// 	CWE:           "CWE-327",
 	// 	AverageCVSS:   5.3,
-	// 	Title:         "Use of Deprecated Cipher Algorithm (DES)",
+	// 	Title:         "Use of Deprecated Cipher Algorithm (DES & RC2)",
 	// 	Severity:      "WARNING",
-	// 	Description:   "Use of DES.Create() employs a deprecated cryptographic algorithm vulnerable to attacks.",
+	// 	Description:   "Usage of deprecated cipher algorithm detected. Use Aes or ChaCha20Poly1305 instead.",
 	// 	Recomendation: "Use secure algorithms like Aes.Create() with a strong key size (e.g., 256-bit) instead of DES.",
 	// },
 
-	// // use-ecb-mode
-	// Rule{
-	// 	Or: []*regexp2.Regexp{regexp2.MustCompile(`(EncryptEcb|DecryptEcb| = CipherMode.Ecb)`, 0),
-	// 		regexp2.MustCompile(`(?s)(\w+\s*\.\s*Mode\s*=\s*CipherMode\.ECB)`, 0),
-	// 	},
-	// 	CWE:           "CWE-327",
-	// 	AverageCVSS:   5.3,
-	// 	Title:         "Use of Insecure ECB Cipher Mode in EncryptEcb",
-	// 	Severity:      "WARNING",
-	// 	Description:   "Using EncryptEcb with SymmetricAlgorithm, Aes, Rijndael, DES, TripleDES, or RC2 is insecure due to ECB's predictable encryption pattern.",
-	// 	Recomendation: "Use secure cipher modes like CBC or GCM with a random IV instead of ECB.",
-	// },
+	// use-ecb-mode
+	Rule{
+		Or: []*regexp2.Regexp{regexp2.MustCompile(`(EncryptEcb|DecryptEcb| = CipherMode.Ecb)`, 0),
+			regexp2.MustCompile(`(?s)(\w+\s*\.\s*Mode\s*=\s*CipherMode\.ECB)`, 0),
+		},
+		CWE:           "CWE-327",
+		AverageCVSS:   5.3,
+		Title:         "Use of Insecure ECB Cipher Mode in EncryptEcb",
+		Severity:      "WARNING",
+		Description:   "Using EncryptEcb with SymmetricAlgorithm, Aes, Rijndael, DES, TripleDES, or RC2 is insecure due to ECB's predictable encryption pattern.",
+		Recomendation: "Use secure cipher modes like CBC or GCM with a random IV instead of ECB.",
+	},
 
 	// // use_weak_rsa_encryption_padding
 	// Rule{
@@ -115,7 +132,7 @@ var CsharpRules []engine.Rule = []engine.Rule{
 	// 	Recomendation: "Replace interpolated strings ($\"...\") with structured logging templates (e.g., \"Processed {@Position} in {Elapsed} ms.\", position, elapsed).",
 	// },
 
-	// correctness-double-epsilon-equality (doing)
+	// // correctness-double-epsilon-equality
 
 	// // correctness-regioninfo-interop
 	// Rule{
@@ -300,19 +317,234 @@ var CsharpRules []engine.Rule = []engine.Rule{
 	// 	Recomendation: "Replace SoapFormatter with safer serialization alternatives, such as System.Text.Json or XmlSerializer, which are less susceptible to deserialization attacks. Ensure input data is validated and sanitized before processing.",
 	// },
 
-	// jwt-tokenvalidationparameters-no-expiry-validation
+	// // memory-marshal-create-span
 
-	Rule{
-		PatternInside: regexp2.MustCompile(`(?s)\.AddJwtBearer\s*\([^)]*\)\s*\{.*?TokenValidationParameters\s*=\s*new\s+TokenValidationParameters\s*\{.*?\}`, 0),
-		ExactMatch:    regexp2.MustCompile(`(?s)((?:ValidateLifetime|RequireExpirationTime)\s*=\s*false)`, 0),
-		CWE:           "CWE-613",
-		AverageCVSS:   5.0,
-		Title:         "JWT Token Validation Parameters with No Expiry Validation",
-		Severity:      "WARNING",
-		Description:   "TokenValidationParameters.ValidateLifetime or RequireExpirationTime set to false, allowing use of expired JWT tokens, which has security implications.",
-		Recomendation: "Set ValidateLifetime and RequireExpirationTime to true to ensure JWT token lifetime validation.",
-		NotAnd: []*regexp2.Regexp{
-			regexp2.MustCompile(`(?s)(ValidateLifetime|RequireExpirationTime)\s*=\s*true`, 0),
-		},
-	},
+	// Rule{
+	// 	Or: []*regexp2.Regexp{
+	// 		regexp2.MustCompile(`(?s)MemoryMarshal\.CreateSpan\s*\([^()]*\)\s*;`, 0),
+	// 		regexp2.MustCompile(`(?s)MemoryMarshal\.CreateReadOnlySpan\s*\([^()]*\)\s*;`, 0),
+	// 	},
+	// 	CWE:           "CWE-125",
+	// 	AverageCVSS:   5.0,
+	// 	Title:         "Insecure MemoryMarshal CreateSpan Usage",
+	// 	Severity:      "WARNING",
+	// 	Description:   "MemoryMarshal.CreateSpan and MemoryMarshal.CreateReadOnlySpan should be used with caution, as the length argument is not checked, potentially leading to out-of-bounds read vulnerabilities (CWE-125, OWASP A04:2021). References: https://docs.microsoft.com/en-us/dotnet/api/system.runtime.interopservices.memorymarshal.createspan?view=net-6.0, https://docs.microsoft.com/en-us/dotnet/api/system.runtime.interopservices.memorymarshal.createreadonlyspan?view=net-6.0",
+	// 	Recomendation: "Ensure the length argument in MemoryMarshal.CreateSpan and MemoryMarshal.CreateReadOnlySpan is validated to prevent out-of-bounds reads. Consider safer memory management alternatives or add explicit bounds checking before calling these methods.",
+	// },
+
+	// // jwt-tokenvalidationparameters-no-expiry-validation
+
+	// Rule{
+	// 	PatternInside: regexp2.MustCompile(`(?s)\.AddJwtBearer\s*\([^)]*\)\s*\{.*?TokenValidationParameters\s*=\s*new\s+TokenValidationParameters\s*\{.*?\}`, 0),
+	// 	ExactMatch:    regexp2.MustCompile(`(?s)((?:ValidateLifetime|RequireExpirationTime)\s*=\s*false)`, 0),
+	// 	CWE:           "CWE-613",
+	// 	AverageCVSS:   5.0,
+	// 	Title:         "JWT Token Validation Parameters with No Expiry Validation",
+	// 	Severity:      "WARNING",
+	// 	Description:   "TokenValidationParameters.ValidateLifetime or RequireExpirationTime set to false, allowing use of expired JWT tokens, which has security implications.",
+	// 	Recomendation: "Set ValidateLifetime and RequireExpirationTime to true to ensure JWT token lifetime validation.",
+	// 	NotAnd: []*regexp2.Regexp{
+	// 		regexp2.MustCompile(`(?s)(ValidateLifetime|RequireExpirationTime)\s*=\s*true`, 0),
+	// 	},
+	// },
+
+	// // misconfigured-lockout-option
+	// Rule{
+	// 	PatternInside: regexp2.MustCompile(`(?s)public\s+async\s+\w+<IActionResult>\s+\w+\s*\([^)]*\)\s*\{.*?\}`, 0),
+	// 	ExactMatch:    regexp2.MustCompile(`\b(?:PasswordSignInAsync|CheckPasswordSignInAsync)\s*\([^)]*lockoutOnFailure:\s*false[^)]*\)`, 0),
+	// 	CWE:           "CWE-307",
+	// 	AverageCVSS:   7.7,
+	// 	Description:   "A misconfigured account lockout mechanism was detected. If lockoutOnFailure is set to false, attackers can brute-force credentials without being locked out.",
+	// 	Recomendation: "Set lockoutOnFailure to true when calling PasswordSignInAsync or CheckPasswordSignInAsync to mitigate brute-force attacks. Account lockout must be correctly configured and enabled to prevent these attacks.",
+	// },
+
+	// // missing-or-broken-authorization
+	// Rule{
+	// 	Auxiliary:     []*regexp2.Regexp{regexp2.MustCompile(`(?m)^\s*using\s+Microsoft\.AspNetCore\.Mvc\s*;`, 0)},
+	// 	ExactMatch:    regexp2.MustCompile(`/public\s+class\s+([A-Za-z_]\w*)\s*:\s*Controller\b\s*\{(?:[^{}]|\{[^{}]*\})*\}/gm`, 0),
+	// 	NotAnd:        []*regexp2.Regexp{regexp2.MustCompile(`/\[(?:AllowAnonymous|Authorize(?:\s*\([^)]*\))?)\]\s*public\s+class\s+([A-Za-z_]\w*)\s*:\s*Controller\b\s*\{(?:[^{}]|\{[^{}]*\})*\}/gm`, 0)},
+	// 	CWE:           "CWE-862",
+	// 	AverageCVSS:   8,
+	// 	Description:   "Controller class detected without explicit authorization attributes. This allows anonymous access by default and may violate least privilege principles.",
+	// 	Recomendation: "Add [Authorize], [Authorize(Roles=..)], [Authorize(Policy=..)], or [AllowAnonymous] explicitly to controller classes to define access control.",
+	// },
+
+	// // open-directory-listing
+	// Rule{
+	// 	PatternInside: regexp2.MustCompile(`public\s+void\s+Configure\s*\([^)]*\bIApplicationBuilder\b[^)]*\)\s*\{(?:[^{}]|\{[^{}]*\})*\}`, 0),
+	// 	ExactMatch:    regexp2.MustCompile(`[A-Za-z_]\w*\.UseDirectoryBrowser\s*\([^)]*\)|[A-Za-z_]\w*\.Services\.AddDirectoryBrowser\s*\([^)]*\);`, 0),
+	// 	CWE:           "CWE-548",
+	// 	AverageCVSS:   4.6,
+	// 	Description:   "Open directory browsing is enabled, potentially exposing sensitive files to attackers. Directory listings should not be publicly accessible in production environments.",
+	// 	Recomendation: "Remove AddDirectoryBrowser() and UseDirectoryBrowser() calls from production code. Use static file middleware with strict access rules, or explicitly serve only necessary files.",
+	// },
+
+	// // razor-use-of-htmlstring
+	// Rule{
+	// 	ExactMatch:    regexp2.MustCompile(`(?m)\bnew\s+(?:[\w\.]+\.)?HtmlString\s*\((?![^)]*(?:HtmlEncode|Encode)\s*\()[^)]*\)|@\(new\s+(?:[\w\.]+\.)?HtmlString\s*\((?![^)]*(?:HtmlEncode|Encode)\s*\()[^)]*\)\)`, regexp2.None),
+	// 	CWE:           "CWE-116",
+	// 	AverageCVSS:   7,
+	// 	Description:   "ASP.NET Core MVC provides an HtmlString class which isn't automatically encoded upon output. This should never be used in combination with untrusted input as this will expose an XSS vulnerability.",
+	// 	Recomendation: "Avoid using HtmlString with untrusted input. Always sanitize or encode input with HtmlEncode/Encode before constructing an HtmlString.",
+	// },
+
+	// // missing-hsts-header
+	// Rule{
+	// 	PatternInside: regexp2.MustCompile(`(?s)(?:public\s+void\s+Configure\s*\([^)]*IApplicationBuilder[^)]*\)\s*\{[^}]*\}|public\s+void\s+ConfigureServices\s*\([^)]*IServiceCollection[^)]*\)\s*\{[^}]*\})`, 0),
+	// 	ExactMatch:    regexp2.MustCompile(`\b(?:app\.Use|services\.Add)\w+\s*\(\s*\)`, 0),
+	// 	CWE:           "CWE-346",
+	// 	AverageCVSS:   3.0,
+	// 	Title:         "Missing HSTS Header Configuration",
+	// 	Severity:      "WARNING",
+	// 	Description:   "The HSTS HTTP response security header is missing, allowing interaction	 and communication to be sent over the insecure HTTP protocol.",
+	// 	Recomendation: "Add app.UseHsts() in the Configure method or services.AddHsts() in ConfigureServices to enforce HTTPS Strict Transport Security.",
+	// 	NotAnd: []*regexp2.Regexp{
+	// 		regexp2.MustCompile(`\b(?:app\.UseHsts|services\.AddHsts)\s*\(\s*\)`, 0),
+	// 	},
+	// },
+
+	// // stacktrace-disclosure
+	// Rule{
+	// 	PatternInside: regexp2.MustCompile(`(?s)public\s+void\s+Configure\s*\([^)]*IApplicationBuilder\s+[^,)]*,\s*[^)]*IWebHostEnvironment\s+[^)]*\)\s*\{[^}]*\}`, 0),
+	// 	ExactMatch:    regexp2.MustCompile(`(?s)(if\s*\(\s*!env\.IsDevelopment\s*\(\s*\)\s*\{[^}]*\}).*?(if\s*\(\s*env\.EnvironmentName\s*==\s*"NotDevelopment"\s*\)\s*\{[^}]*\})`, 0),
+	// 	CWE:           "CWE-209",
+	// 	AverageCVSS:   3.0,
+	// 	Title:         "Stacktrace Disclosure in Production Environment",
+	// 	Severity:      "WARNING",
+	// 	Description:   "UseDeveloperExceptionPage() is called outside of a Development environment check. Accidentally disclosing sensitive stack trace information in a production environment aids an attacker in reconnaissance and information gathering.",
+	// 	Recomendation: "Wrap UseDeveloperExceptionPage() inside an environment check: if (env.IsDevelopment()) { app.UseDeveloperExceptionPage(); }. For inverted checks like !env.IsDevelopment() or wrong env names like 'NotDevelopment', remove the negation or correct the string to 'Development'.",
+	// },
+
+	// // insecure-newtonsoft-deserialization
+	// Rule{
+	// 	Or: []*regexp2.Regexp{
+	// 		// Pattern 1: Inline JsonSerializerSettings with TypeNameHandling
+	// 		regexp2.MustCompile(`JsonConvert\.DeserializeObject(?:<\w+>)?\s*\([^,]+,\s*new\s+JsonSerializerSettings\s*\{[^}]*TypeNameHandling\s*=\s*TypeNameHandling\.(?:All|Auto|Objects|Arrays)`, 0),
+	// 		// Pattern 2: Direct assignment of TypeNameHandling to settings object
+	// 		regexp2.MustCompile(`\w+\.TypeNameHandling\s*=\s*TypeNameHandling\.(?:All|Auto|Objects|Arrays)`, 0),
+	// 		// Pattern 3: DefaultSettings with TypeNameHandling (multi-line support)
+	// 		regexp2.MustCompile(`(?s)JsonConvert\.DefaultSettings\s*=\s*\(\s*\)\s*=>\s*.*?new\s+JsonSerializerSettings\s*\{[^}]*TypeNameHandling\s*=\s*TypeNameHandling\.(?:All|Auto|Objects|Arrays)`, 0),
+	// 	},
+	// 	CWE:           "CWE-502",
+	// 	AverageCVSS:   7.5,
+	// 	Title:         "Insecure Newtonsoft.Json Deserialization with TypeNameHandling",
+	// 	Severity:      "WARNING",
+	// 	Description:   "VULNERABLE: TypeNameHandling.All/Auto/Objects/Arrays allows untrusted input to control object types during deserialization, enabling arbitrary code execution. This line must be changed to use TypeNameHandling.None or implement a secure SerializationBinder.",
+	// 	Recomendation: "CHANGE THIS LINE: Set TypeNameHandling to None and use a custom SerializationBinder to restrict deserialized types to a safe list. Example: TypeNameHandling = TypeNameHandling.None",
+	// 	NotAnd: []*regexp2.Regexp{
+	// 		// Only exclude if TypeNameHandling is set to None
+	// 		regexp2.MustCompile(`TypeNameHandling\s*=\s*TypeNameHandling\.None`, 0),
+	// 	},
+	// },
+
+	// // unsafe-path-combine - Only detect Path.Combine lines
+	// Rule{
+	// 	ExactMatch:    regexp2.MustCompile(`Path\.Combine\s*\([^,]+,\s*\w+\s*\)`, 0),
+	// 	CWE:           "CWE-22",
+	// 	AverageCVSS:   6.5,
+	// 	Title:         "Unsafe Path.Combine Usage Leading to Path Traversal",
+	// 	Severity:      "WARNING",
+	// 	Description:   "VULNERABLE: User input is used directly in Path.Combine without sanitization, enabling path traversal attacks. This line must be changed to sanitize the input.",
+	// 	Recomendation: "CHANGE THIS LINE: Sanitize user input with Path.GetFileName before Path.Combine, or validate Path.GetFileName(input) == input to prevent traversal.",
+	// 	NotAnd: []*regexp2.Regexp{
+	// 		// Exclude if input is sanitized with Path.GetFileName
+	// 		regexp2.MustCompile(`Path\.GetFileName\s*\(\s*\w+\s*\)`, 0),
+	// 		// Exclude if there's validation check
+	// 		regexp2.MustCompile(`(?s)if\s*\([^)]*Path\.GetFileName\s*\(\s*\w+\s*\)\s*!=\s*\w+\s*\)`, 0),
+	// 	},
+	// },
+
+	// // os-command-injection (strict, sample-specific)
+	// Rule{
+	// 	PatternInside: regexp2.MustCompile(`(?s)using\s+System\.Diagnostics;`, 0),
+	// 	Or: []*regexp2.Regexp{
+	// 		// 1) var process = Process.Start(command);
+	// 		regexp2.MustCompile(`\bProcess\.Start\s*\(\s*command\s*\)`, 0),
+	// 		// 2) var process = Process.Start(command, arguments|args);
+	// 		regexp2.MustCompile(`\bProcess\.Start\s*\(\s*command\s*,\s*(?:arguments|args)\s*\)`, 0),
+	// 		// 3) Process process = new Process(); process.StartInfo.FileName = command; ... process.Start();
+	// 		regexp2.MustCompile(`(?s)Process\s+process\s*=\s*new\s+Process\s*\(\s*\)\s*;[\s\S]*?process\s*\.\s*StartInfo\s*\.\s*FileName\s*=\s*command\s*;[\s\S]*?process\s*\.\s*Start\s*\(\s*\)`, 0),
+	// 		// 4) Process process = new Process(); ... FileName = command; Arguments = arguments|args; ... process.Start();
+	// 		regexp2.MustCompile(`(?s)Process\s+process\s*=\s*new\s+Process\s*\(\s*\)\s*;[\s\S]*?process\s*\.\s*StartInfo\s*\.\s*FileName\s*=\s*command\s*;[\s\S]*?process\s*\.\s*StartInfo\s*\.\s*Arguments\s*=\s*(?:arguments|args)\s*;[\s\S]*?process\s*\.\s*Start\s*\(\s*\)`, 0),
+	// 		// 5) ProcessStartInfo processStartInfo = new ProcessStartInfo(){ FileName = command [ , Arguments = ... ] }; var process = Process.Start(processStartInfo);
+	// 		regexp2.MustCompile(`(?s)ProcessStartInfo\s+processStartInfo\s*=\s*new\s+ProcessStartInfo\s*\(\s*\)\s*\{[\s\S]*?FileName\s*=\s*command[\s\S]*?\}\s*;[\s\S]*?Process\.Start\s*\(\s*processStartInfo\s*\)`, 0),
+	// 		// 6) ProcessStartInfo processStartInfo = new ProcessStartInfo(){ FileName = "constant", Arguments = args }; var process = Process.Start(processStartInfo);
+	// 		regexp2.MustCompile(`(?s)ProcessStartInfo\s+processStartInfo\s*=\s*new\s+ProcessStartInfo\s*\(\s*\)\s*\{[\s\S]*?Arguments\s*=\s*args[\s\S]*?\}\s*;[\s\S]*?Process\.Start\s*\(\s*processStartInfo\s*\)`, 0),
+	// 		// 7) Process process = new Process { StartInfo = new ProcessStartInfo { FileName = command, Arguments = args } }; process.Start();
+	// 		regexp2.MustCompile(`(?s)Process\s+process\s*=\s*new\s+Process\s*\{[\s\S]*?StartInfo\s*=\s*new\s+ProcessStartInfo\s*\{[\s\S]*?FileName\s*=\s*command[\s\S]*?Arguments\s*=\s*args[\s\S]*?\}[\s\S]*?\}[\s\S]*?process\s*\.\s*Start\s*\(\s*\)`, 0),
+	// 		// 8) Process process = new Process { StartInfo = new ProcessStartInfo { FileName = "constant", Arguments = arguments } }; process.Start();
+	// 		regexp2.MustCompile(`(?s)Process\s+process\s*=\s*new\s+Process\s*\{[\s\S]*?StartInfo\s*=\s*new\s+ProcessStartInfo\s*\{[\s\S]*?Arguments\s*=\s*arguments[\s\S]*?\}[\s\S]*?\}[\s\S]*?process\s*\.\s*Start\s*\(\s*\)`, 0),
+	// 		// 9) Process process = new Process { StartInfo = new ProcessStartInfo { FileName = command, Arguments = "constant" } }; process.Start();
+	// 		regexp2.MustCompile(`(?s)Process\s+process\s*=\s*new\s+Process\s*\{[\s\S]*?StartInfo\s*=\s*new\s+ProcessStartInfo\s*\{[\s\S]*?FileName\s*=\s*command[\s\S]*?\}[\s\S]*?\}[\s\S]*?process\s*\.\s*Start\s*\(\s*\)`, 0),
+	// 	},
+	// 	CWE:           "CWE-78",
+	// 	AverageCVSS:   8.0,
+	// 	Title:         "OS Command Injection via Process.Start",
+	// 	Severity:      "ERROR",
+	// 	Description:   "The code constructs an OS command using externally-influenced input and executes it via Process.Start or ProcessStartInfo, which can lead to command injection.",
+	// 	Recomendation: "Avoid passing user-controllable data to Process.Start or StartInfo.FileName/Arguments. Use allowlists and strong validation, or safer APIs.",
+	// 	NotAnd: []*regexp2.Regexp{
+	// 		// Exclude constant Process.Start(...) and Process.Start(..., ...)
+	// 		regexp2.MustCompile(`\bProcess\.Start\s*\(\s*\"`, 0),
+	// 		regexp2.MustCompile(`\bProcess\.Start\s*\(\s*\"[^\"]*\"\s*,`, 0),
+	// 		// Exclude safe constant-only ProcessStartInfo { FileName = "constant" } before Process.Start(processStartInfo)
+	// 		regexp2.MustCompile(`(?s)ProcessStartInfo\s+processStartInfo\s*=\s*new\s+ProcessStartInfo\s*\(\s*\)\s*\{\s*FileName\s*=\s*\"[^\"]*\"\s*\}\s*;[\s\S]*?Process\.Start\s*\(\s*processStartInfo\s*\)`, 0),
+	// 		// Exclude safe constant-only inline Process { StartInfo = new ProcessStartInfo { FileName = "constant", Arguments = "constant" } } before process.Start();
+	// 		regexp2.MustCompile(`(?s)Process\s+process\s*=\s*new\s+Process\s*\{[\s\S]*?StartInfo\s*=\s*new\s+ProcessStartInfo\s*\{[\s\S]*?FileName\s*=\s*\"[^\"]*\"[\s\S]*?Arguments\s*=\s*\"[^\"]*\"[\s\S]*?\}[\s\S]*?\}[\s\S]*?process\s*\.\s*Start\s*\(\s*\)`, 0),
+	// 	},
+	// },
+
+	// // os-command-injection-args
+	// Rule{
+	// 	PatternInside: regexp2.MustCompile(`(?s)using\s+System\.Diagnostics;`, 0),
+	// 	Or: []*regexp2.Regexp{
+	// 		regexp2.MustCompile(`\bProcess\.Start\s*\(\s*command\s*,\s*arguments\s*\)`, 0),
+	// 		regexp2.MustCompile(`\bProcess\.Start\s*\(\s*command\s*,\s*args\s*\)`, 0),
+	// 	},
+	// 	CWE:           "CWE-78",
+	// 	AverageCVSS:   8.0,
+	// 	Title:         "OS Command Injection via Process.Start with Arguments",
+	// 	Severity:      "ERROR",
+	// 	Description:   "The code constructs an OS command using externally-influenced input and executes it via Process.Start or ProcessStartInfo, which can lead to command injection.",
+	// 	Recomendation: "Avoid passing user-controllable data to Process.Start or StartInfo.FileName/Arguments. Use allowlists and strong validation, or safer APIs.",
+	// 	NotAnd: []*regexp2.Regexp{
+	// 		// Exclude constant Process.Start(\"...\", \"...\")
+	// 		regexp2.MustCompile(`\bProcess\.Start\s*\(\s*\"[^\"]*\"\s*,`, 0),
+	// 	},
+	// },
+
+	// // os-command-injection-startinfo
+	// Rule{
+	// 	ExactMatch:    regexp2.MustCompile(`\bProcess\.Start\s*\(\s*[A-Za-z_]\w*\s*\)`, 0),
+	// 	CWE:           "CWE-78",
+	// 	AverageCVSS:   8.0,
+	// 	Title:         "OS Command Injection via Process.Start with ProcessStartInfo",
+	// 	Severity:      "ERROR",
+	// 	Description:   "The code constructs an OS command using externally-influenced input and executes it via Process.Start or ProcessStartInfo, which can lead to command injection.",
+	// 	Recomendation: "Avoid passing user-controllable data to Process.Start or StartInfo.FileName/Arguments. Use allowlists and strong validation, or safer APIs.",
+	// 	NotAnd: []*regexp2.Regexp{
+	// 		// Exclude exact safe case: only constant FileName in initializer before Process.Start(ps)
+	// 		regexp2.MustCompile(`(?s)ProcessStartInfo\s+[A-Za-z_]\w*\s*=\s*new\s+ProcessStartInfo\s*\(\s*\)\s*\{\s*FileName\s*=\s*\"[^\"]*\"\s*\}\s*;\s*[^\S\n]*//\s*ok:[^\n]*\n\s*var\s+\w+\s*=\s*Process\.Start\s*\(\s*[A-Za-z_]\w*\s*\)`, 0),
+	// 	},
+	// },
+
+	// // os-command-injection-process-start
+	// Rule{
+	// 	Or: []*regexp2.Regexp{
+	// 		// StartInfo.FileName = command; ... process.Start()
+	// 		regexp2.MustCompile(`(?s)StartInfo\s*\.\s*FileName\s*=\s*command\s*;[\s\S]*?\b[A-Za-z_]\w*\s*\.\s*Start\s*\(\s*\)`, 0),
+	// 		// StartInfo.Arguments = (arguments|args); ... process.Start()
+	// 		regexp2.MustCompile(`(?s)StartInfo\s*\.\s*Arguments\s*=\s*(?:arguments|args)\s*;[\s\S]*?\b[A-Za-z_]\w*\s*\.\s*Start\s*\(\s*\)`, 0),
+	// 		// Inline new Process { StartInfo = new ProcessStartInfo { FileName = command[, Arguments = (arguments|args)] } }; ... Start()
+	// 		regexp2.MustCompile(`(?s)new\s+Process\s*\(\s*\)\s*\{[\s\S]*?StartInfo\s*=\s*new\s+ProcessStartInfo\s*\(\s*\)\s*\{[\s\S]*?FileName\s*=\s*command[\s\S]*?\}[\s\S]*?\}[\s\S]*?\b[A-Za-z_]\w*\s*\.\s*Start\s*\(\s*\)`, 0),
+	// 		// Inline new Process { StartInfo = new ProcessStartInfo { Arguments = (arguments|args) } }; ... Start()
+	// 		regexp2.MustCompile(`(?s)new\s+Process\s*\(\s*\)\s*\{[\s\S]*?StartInfo\s*=\s*new\s+ProcessStartInfo\s*\(\s*\)\s*\{[\s\S]*?Arguments\s*=\s*(?:arguments|args)[\s\S]*?\}[\s\S]*?\}[\s\S]*?\b[A-Za-z_]\w*\s*\.\s*Start\s*\(\s*\)`, 0),
+	// 	},
+	// 	CWE:           "CWE-78",
+	// 	AverageCVSS:   8.0,
+	// 	Title:         "OS Command Injection via Process.Start()",
+	// 	Severity:      "ERROR",
+	// 	Description:   "The code constructs an OS command using externally-influenced input and executes it via Process.Start or ProcessStartInfo, which can lead to command injection.",
+	// 	Recomendation: "Avoid passing user-controllable data to Process.Start or StartInfo.FileName/Arguments. Use allowlists and strong validation, or safer APIs.",
+	// },
 }
