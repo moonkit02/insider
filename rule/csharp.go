@@ -115,15 +115,15 @@ var CsharpRules []engine.Rule = []engine.Rule{
 	// 	Recomendation: "Set requireSSL='true' and cookieRequireSSL='true' to enforce secure cookie transmission over HTTPS.",
 	// },
 
-	// // structured-logging
+	// structured-logging
 	// Rule{
 	// 	ExactMatch:    regexp2.MustCompile(`(?s)\w+\.(?:Debug|Error|Fatal|Information|Verbose|Warning|LogCritical|LogDebug|LogError|LogInformation|LogTrace|LogWarning|Info|Trace|Warn)\s*\(\s*\$"[^"]*(?:\{[^}]+\})[^"]*"\s*\)`, 0),
 	// 	CWE:           "CWE-117",
 	// 	AverageCVSS:   2.0,
 	// 	Title:         "Unstructured Logging with Variable Interpolation",
 	// 	Severity:      "INFO",
-	// 	Description:   "Interpolated log messages with variables (e.g., $\"log {var}\") obscure parameters and reduce log searchability. Use structured logging.",
-	// 	Recomendation: "Replace interpolated strings ($\"...\") with structured logging templates (e.g., \"Processed {@Position} in {Elapsed} ms.\", position, elapsed).",
+	// 	Description:   "Interpolated log messages with variables (e.g., $\"log {var}\") obscure obscures the distinction between variables and the log message.",
+	// 	Recomendation: "Replace interpolated strings ($\"...\") with structured logging templates (e.g., \"Processed {@Position} in {Elapsed} ms.\", position, elapsed) instead, where the variables are passed as additional arguments and the interpolation is performed by the logging library. This reduces the possibility of log injection and makes it easier to search through logs.",
 	// },
 
 	// // correctness-double-epsilon-equality
@@ -135,19 +135,19 @@ var CsharpRules []engine.Rule = []engine.Rule{
 	// 	AverageCVSS:   3.0,
 	// 	Title:         "Potential Incorrect RegionInfo Serialization in Inter-Process Communication",
 	// 	Severity:      "WARNING",
-	// 	Description:   "Using a two-character ISO region code to instantiate RegionInfo and writing it via a PipeStream may lead to incorrect serialization or inter-process communication issues.",
-	// 	Recomendation: "Instantiate RegionInfo with a full culture name (e.g., 'en-US') instead of a two-letter ISO region code (e.g., 'US') for inter-process communication.",
+	// 	Description:   "Potential inter-process write of RegionInfo $RI via $PIPESTREAM $P that was instantiated with a two-character culture code $REGION.",
+	// 	Recomendation: "Per .NET documentation, if you want to persist a RegionInfo object or communicate it between processes, you should instantiate RegionInfo with a full culture name (e.g., 'en-US') instead of a two-letter ISO region code (e.g., 'US').",
 	// },
 
-	// // correctness-sslcertificatetrust-handshake-no-trust
+	// correctness-sslcertificatetrust-handshake-no-trust
 	// Rule{
 	// 	PatternInside: nil,
 	// 	ExactMatch:    regexp2.MustCompile(`(?s)SslCertificateTrust\.CreateForX509(Collection|Store)\s*\(\s*[^\)]*?,\s*(?:sendTrustInHandshake\s*=\s*true|true)\s*\)\s*;`, 0),
-	// 	CWE:           "CWE-295",
+	// 	CWE:           "CWE-200",
 	// 	AverageCVSS:   5.0,
 	// 	Title:         "Insecure SSL Certificate Trust Configuration",
 	// 	Severity:      "WARNING",
-	// 	Description:   "Using SslCertificateTrust.CreateForX509Collection with sendTrustInHandshake=true or second parameter true may expose sensitive trust information, leading to potential man-in-the-middle attacks.",
+	// 	Description:   "Sending the trusted CA list increases the size of the handshake request and can leak system configuration information.",
 	// 	Recomendation: "Set sendTrustInHandshake=false or use false as the second parameter to avoid sending trust information in the handshake.",
 	// },
 
@@ -326,21 +326,34 @@ var CsharpRules []engine.Rule = []engine.Rule{
 	// 	Recomendation: "Ensure the length argument in MemoryMarshal.CreateSpan and MemoryMarshal.CreateReadOnlySpan is validated to prevent out-of-bounds reads. Consider safer memory management alternatives or add explicit bounds checking before calling these methods.",
 	// },
 
-	// // jwt-tokenvalidationparameters-no-expiry-validation
+	// // jwt-tokenvalidationparameters-no-expiry-validation 1
+	Rule{
+		PatternInside: regexp2.MustCompile(`(?s)\.AddJwtBearer\s*\([^)]*\)\s*\{.*?TokenValidationParameters\s*=\s*new\s+TokenValidationParameters\s*\{.*?\}`, 0),
+		ExactMatch:    regexp2.MustCompile(`(?s)((?:ValidateLifetime|RequireExpirationTime)\s*=\s*false)`, 0),
+		CWE:           "CWE-613",
+		AverageCVSS:   5.0,
+		Title:         "JWT Token Validation Parameters with No Expiry Validation",
+		Severity:      "WARNING",
+		Description:   "TokenValidationParameters.ValidateLifetime or RequireExpirationTime set to false, allowing use of expired JWT tokens, which has security implications.",
+		Recomendation: "Set ValidateLifetime and RequireExpirationTime to true to ensure JWT token lifetime validation.",
+		NotAnd: []*regexp2.Regexp{
+			regexp2.MustCompile(`(?s)(ValidateLifetime|RequireExpirationTime)\s*=\s*true`, 0),
+		},
+	},
 
-	// Rule{
-	// 	PatternInside: regexp2.MustCompile(`(?s)\.AddJwtBearer\s*\([^)]*\)\s*\{.*?TokenValidationParameters\s*=\s*new\s+TokenValidationParameters\s*\{.*?\}`, 0),
-	// 	ExactMatch:    regexp2.MustCompile(`(?s)((?:ValidateLifetime|RequireExpirationTime)\s*=\s*false)`, 0),
-	// 	CWE:           "CWE-613",
-	// 	AverageCVSS:   5.0,
-	// 	Title:         "JWT Token Validation Parameters with No Expiry Validation",
-	// 	Severity:      "WARNING",
-	// 	Description:   "TokenValidationParameters.ValidateLifetime or RequireExpirationTime set to false, allowing use of expired JWT tokens, which has security implications.",
-	// 	Recomendation: "Set ValidateLifetime and RequireExpirationTime to true to ensure JWT token lifetime validation.",
-	// 	NotAnd: []*regexp2.Regexp{
-	// 		regexp2.MustCompile(`(?s)(ValidateLifetime|RequireExpirationTime)\s*=\s*true`, 0),
-	// 	},
-	// },
+	// // jwt-tokenvalidationparameters-no-expiry-validation 2
+	Rule{
+		ExactMatch:    regexp2.MustCompile(`(?s)((?:ValidateLifetime|RequireExpirationTime)\s*=\s*false)`, 0),
+		CWE:           "CWE-613",
+		AverageCVSS:   5.0,
+		Title:         "JWT Token Validation Parameters with No Expiry Validation",
+		Severity:      "WARNING",
+		Description:   "TokenValidationParameters.ValidateLifetime or RequireExpirationTime set to false, allowing use of expired JWT tokens, which has security implications.",
+		Recomendation: "Set ValidateLifetime and RequireExpirationTime to true to ensure JWT token lifetime validation.",
+		NotAnd: []*regexp2.Regexp{
+			regexp2.MustCompile(`(?s)(ValidateLifetime|RequireExpirationTime)\s*=\s*true`, 0),
+		},
+	},
 
 	// // misconfigured-lockout-option
 	// Rule{
@@ -374,23 +387,38 @@ var CsharpRules []engine.Rule = []engine.Rule{
 	// },
 
 	// razor-use-of-htmlstring
-	Rule{
-		// ExactMatch:    regexp2.MustCompile(`new\s+(?:[\w\.]+\.)?HtmlString\s*\((?![^)]*(?:HtmlEncode|Encode)\s*\()[^)]*\)|@\(new\s+(?:[\w\.]+\.)?HtmlString\s*\((?![^)]*(?:HtmlEncode|Encode)\s*\()[^)]*\)\)`, 0),
-		Or: []*regexp2.Regexp{
-			regexp2.MustCompile(`new\s+(?:[A-Za-z_][\w\.]*\.)?HtmlString\s*\([^)]*\)\s*\)`, 0),
-			regexp2.MustCompile(`@\s*\(\s*new\s+(?:[A-Za-z_][\w\.]*\.)?HtmlString\s*\([^)]*\)\s*\)*`, 0),
-		},
-		NotOr: []*regexp2.Regexp{
-			regexp2.MustCompile(`new\s+(?:[A-Za-z_][\w\.]*\.)?HtmlString\s*\(\s*(?:\w*\.)?(?:HtmlEncode|Encode)\s*\([^)]*\)\s*\)`, 0),
-			regexp2.MustCompile(`@\s*\(\s*new\s+(?:[A-Za-z_][\w\.]*\.)?HtmlString\s*\(\s*(?:\w*\.)?(?:HtmlEncode|Encode)\s*\([^)]*\)\s*\)\s*\)`, 0),
-		},
-		CWE:           "CWE-116",
-		AverageCVSS:   7,
-		Description:   "ASP.NET Core MVC provides an HtmlString class which isn't automatically encoded upon output. This should never be used in combination with untrusted input as this will expose an XSS vulnerability.",
-		Recomendation: "Avoid using HtmlString with untrusted input. Always sanitize or encode input with HtmlEncode/Encode before constructing an HtmlString.",
-	},
+	// Rule{
+	// 	// ExactMatch:    regexp2.MustCompile(`new\s+(?:[\w\.]+\.)?HtmlString\s*\((?![^)]*(?:HtmlEncode|Encode)\s*\()[^)]*\)|@\(new\s+(?:[\w\.]+\.)?HtmlString\s*\((?![^)]*(?:HtmlEncode|Encode)\s*\()[^)]*\)\)`, 0),
+	// 	Or: []*regexp2.Regexp{
+	// 		regexp2.MustCompile(`new\s+(?:[A-Za-z_][\w\.]*\.)?HtmlString\s*\([^)]*\)\s*\)`, 0),
+	// 		regexp2.MustCompile(`@\s*\(\s*new\s+(?:[A-Za-z_][\w\.]*\.)?HtmlString\s*\([^)]*\)\s*\)*`, 0),
+	// 	},
+	// 	NotOr: []*regexp2.Regexp{
+	// 		regexp2.MustCompile(`new\s+(?:[A-Za-z_][\w\.]*\.)?HtmlString\s*\(\s*(?:\w*\.)?(?:HtmlEncode|Encode)\s*\([^)]*\)\s*\)`, 0),
+	// 		regexp2.MustCompile(`@\s*\(\s*new\s+(?:[A-Za-z_][\w\.]*\.)?HtmlString\s*\(\s*(?:\w*\.)?(?:HtmlEncode|Encode)\s*\([^)]*\)\s*\)\s*\)`, 0),
+	// 	},
+	// 	CWE:           "CWE-116",
+	// 	AverageCVSS:   7,
+	// 	Description:   "ASP.NET Core MVC provides an HtmlString class which isn't automatically encoded upon output. This should never be used in combination with untrusted input as this will expose an XSS vulnerability.",
+	// 	Recomendation: "Avoid using HtmlString with untrusted input. Always sanitize or encode input with HtmlEncode/Encode before constructing an HtmlString.",
+	// },
 
-	// // missing-hsts-header
+	// // missing-hsts-header pt 1
+	// Rule{
+	// 	PatternInside: regexp2.MustCompile(`(?s)(?:public\s+void\s+Configure\s*\([^)]*IApplicationBuilder[^)]*\)\s*\{[^}]*\}|public\s+void\s+ConfigureServices\s*\([^)]*IServiceCollection[^)]*\)\s*\{[^}]*\})`, 0),
+	// 	ExactMatch:    regexp2.MustCompile(`\b(?:app\.Use|services\.Add)\w+\s*\(\s*\)`, 0),
+	// 	CWE:           "CWE-346",
+	// 	AverageCVSS:   3.0,
+	// 	Title:         "Missing HSTS Header Configuration",
+	// 	Severity:      "WARNING",
+	// 	Description:   "The HSTS HTTP response security header is missing, allowing interaction	 and communication to be sent over the insecure HTTP protocol.",
+	// 	Recomendation: "Add app.UseHsts() in the Configure method or services.AddHsts() in ConfigureServices to enforce HTTPS Strict Transport Security.",
+	// 	NotAnd: []*regexp2.Regexp{
+	// 		regexp2.MustCompile(`\b(?:app\.UseHsts|services\.AddHsts)\s*\(\s*\)`, 0),
+	// 	},
+	// },
+
+	// // missing-hsts-header pt 2
 	// Rule{
 	// 	PatternInside: regexp2.MustCompile(`(?s)(?:public\s+void\s+Configure\s*\([^)]*IApplicationBuilder[^)]*\)\s*\{[^}]*\}|public\s+void\s+ConfigureServices\s*\([^)]*IServiceCollection[^)]*\)\s*\{[^}]*\})`, 0),
 	// 	ExactMatch:    regexp2.MustCompile(`\b(?:app\.Use|services\.Add)\w+\s*\(\s*\)`, 0),
