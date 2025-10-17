@@ -104,16 +104,16 @@ var CsharpRules []engine.Rule = []engine.Rule{
 	// 	Recomendation: "Use modern key exchange mechanisms like ECDH or RSA-OAEP instead of RSAPKCS1.",
 	// },
 
-	// web-config-insecure-cookie-settings
-	Rule{
-		ExactMatch:    regexp2.MustCompile(`(?i)<\s*(?:httpCookies|forms|roleManager)\b[^>]*(?:requireSSL|cookieRequireSSL)\s*=\s*"(FALSE|False|false)"[^>]*>`, 0),
-		CWE:           "CWE-614",
-		AverageCVSS:   3.0,
-		Title:         "Insecure Cookie Settings in web.config",
-		Severity:      "WARNING",
-		Description:   "Cookie Secure flag is disabled (requireSSL='false' or cookieRequireSSL='false'), risking sensitive cookie exposure over plaintext HTTP.",
-		Recomendation: "Set requireSSL='true' and cookieRequireSSL='true' to enforce secure cookie transmission over HTTPS.",
-	},
+	// // web-config-insecure-cookie-settings
+	// Rule{
+	// 	ExactMatch:    regexp2.MustCompile(`(?i)<\s*(?:httpCookies|forms|roleManager)\b[^>]*(?:requireSSL|cookieRequireSSL)\s*=\s*"(FALSE|False|false)"[^>]*>`, 0),
+	// 	CWE:           "CWE-614",
+	// 	AverageCVSS:   3.0,
+	// 	Title:         "Insecure Cookie Settings in web.config",
+	// 	Severity:      "WARNING",
+	// 	Description:   "Cookie Secure flag is disabled (requireSSL='false' or cookieRequireSSL='false'), risking sensitive cookie exposure over plaintext HTTP.",
+	// 	Recomendation: "Set requireSSL='true' and cookieRequireSSL='true' to enforce secure cookie transmission over HTTPS.",
+	// },
 
 	// // structured-logging
 	// Rule{
@@ -352,11 +352,11 @@ var CsharpRules []engine.Rule = []engine.Rule{
 	// 	Recomendation: "Set lockoutOnFailure to true when calling PasswordSignInAsync or CheckPasswordSignInAsync to mitigate brute-force attacks. Account lockout must be correctly configured and enabled to prevent these attacks.",
 	// },
 
-	// // missing-or-broken-authorization
+	// missing-or-broken-authorization
 	// Rule{
-	// 	Auxiliary:     []*regexp2.Regexp{regexp2.MustCompile(`(?m)^\s*using\s+Microsoft\.AspNetCore\.Mvc\s*;`, 0)},
-	// 	ExactMatch:    regexp2.MustCompile(`/public\s+class\s+([A-Za-z_]\w*)\s*:\s*Controller\b\s*\{(?:[^{}]|\{[^{}]*\})*\}/gm`, 0),
-	// 	NotAnd:        []*regexp2.Regexp{regexp2.MustCompile(`/\[(?:AllowAnonymous|Authorize(?:\s*\([^)]*\))?)\]\s*public\s+class\s+([A-Za-z_]\w*)\s*:\s*Controller\b\s*\{(?:[^{}]|\{[^{}]*\})*\}/gm`, 0)},
+	// 	Auxiliary:     []*regexp2.Regexp{regexp2.MustCompile(`^\s*using\s+Microsoft\.AspNetCore\.Mvc\s*;`, 0)},
+	// 	And:           []*regexp2.Regexp{regexp2.MustCompile(`(?:\[\s*\w+(?:\s*\([^)]*\))?\s*\]\s*)*public\s+class\s+([A-Za-z_]\w*)\s*:\s*Controller\b\s*\{(?:[^{}]|\{[^{}]*\})*\}`, 0)},
+	// 	NotAnd:        []*regexp2.Regexp{regexp2.MustCompile(`\[(?:AllowAnonymous|Authorize(?:\s*\([^)]*\))?)\]\s*public\s+class\s+([A-Za-z_]\w*)\s*:\s*Controller\b\s*\{(?:[^{}]|\{[^{}]*\})*\}`, 0)},
 	// 	CWE:           "CWE-862",
 	// 	AverageCVSS:   8,
 	// 	Description:   "Controller class detected without explicit authorization attributes. This allows anonymous access by default and may violate least privilege principles.",
@@ -373,14 +373,22 @@ var CsharpRules []engine.Rule = []engine.Rule{
 	// 	Recomendation: "Remove AddDirectoryBrowser() and UseDirectoryBrowser() calls from production code. Use static file middleware with strict access rules, or explicitly serve only necessary files.",
 	// },
 
-	// // razor-use-of-htmlstring
-	// Rule{
-	// 	ExactMatch:    regexp2.MustCompile(`(?m)\bnew\s+(?:[\w\.]+\.)?HtmlString\s*\((?![^)]*(?:HtmlEncode|Encode)\s*\()[^)]*\)|@\(new\s+(?:[\w\.]+\.)?HtmlString\s*\((?![^)]*(?:HtmlEncode|Encode)\s*\()[^)]*\)\)`, regexp2.None),
-	// 	CWE:           "CWE-116",
-	// 	AverageCVSS:   7,
-	// 	Description:   "ASP.NET Core MVC provides an HtmlString class which isn't automatically encoded upon output. This should never be used in combination with untrusted input as this will expose an XSS vulnerability.",
-	// 	Recomendation: "Avoid using HtmlString with untrusted input. Always sanitize or encode input with HtmlEncode/Encode before constructing an HtmlString.",
-	// },
+	// razor-use-of-htmlstring
+	Rule{
+		// ExactMatch:    regexp2.MustCompile(`new\s+(?:[\w\.]+\.)?HtmlString\s*\((?![^)]*(?:HtmlEncode|Encode)\s*\()[^)]*\)|@\(new\s+(?:[\w\.]+\.)?HtmlString\s*\((?![^)]*(?:HtmlEncode|Encode)\s*\()[^)]*\)\)`, 0),
+		Or: []*regexp2.Regexp{
+			regexp2.MustCompile(`new\s+(?:[A-Za-z_][\w\.]*\.)?HtmlString\s*\([^)]*\)\s*\)`, 0),
+			regexp2.MustCompile(`@\s*\(\s*new\s+(?:[A-Za-z_][\w\.]*\.)?HtmlString\s*\([^)]*\)\s*\)*`, 0),
+		},
+		NotOr: []*regexp2.Regexp{
+			regexp2.MustCompile(`new\s+(?:[A-Za-z_][\w\.]*\.)?HtmlString\s*\(\s*(?:\w*\.)?(?:HtmlEncode|Encode)\s*\([^)]*\)\s*\)`, 0),
+			regexp2.MustCompile(`@\s*\(\s*new\s+(?:[A-Za-z_][\w\.]*\.)?HtmlString\s*\(\s*(?:\w*\.)?(?:HtmlEncode|Encode)\s*\([^)]*\)\s*\)\s*\)`, 0),
+		},
+		CWE:           "CWE-116",
+		AverageCVSS:   7,
+		Description:   "ASP.NET Core MVC provides an HtmlString class which isn't automatically encoded upon output. This should never be used in combination with untrusted input as this will expose an XSS vulnerability.",
+		Recomendation: "Avoid using HtmlString with untrusted input. Always sanitize or encode input with HtmlEncode/Encode before constructing an HtmlString.",
+	},
 
 	// // missing-hsts-header
 	// Rule{
