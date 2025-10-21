@@ -326,34 +326,21 @@ var CsharpRules []engine.Rule = []engine.Rule{
 	// 	Recomendation: "Ensure the length argument in MemoryMarshal.CreateSpan and MemoryMarshal.CreateReadOnlySpan is validated to prevent out-of-bounds reads. Consider safer memory management alternatives or add explicit bounds checking before calling these methods.",
 	// },
 
-	// // jwt-tokenvalidationparameters-no-expiry-validation 1
-	Rule{
-		PatternInside: regexp2.MustCompile(`(?s)\.AddJwtBearer\s*\([^)]*\)\s*\{.*?TokenValidationParameters\s*=\s*new\s+TokenValidationParameters\s*\{.*?\}`, 0),
-		ExactMatch:    regexp2.MustCompile(`(?s)((?:ValidateLifetime|RequireExpirationTime)\s*=\s*false)`, 0),
-		CWE:           "CWE-613",
-		AverageCVSS:   5.0,
-		Title:         "JWT Token Validation Parameters with No Expiry Validation",
-		Severity:      "WARNING",
-		Description:   "TokenValidationParameters.ValidateLifetime or RequireExpirationTime set to false, allowing use of expired JWT tokens, which has security implications.",
-		Recomendation: "Set ValidateLifetime and RequireExpirationTime to true to ensure JWT token lifetime validation.",
-		NotAnd: []*regexp2.Regexp{
-			regexp2.MustCompile(`(?s)(ValidateLifetime|RequireExpirationTime)\s*=\s*true`, 0),
-		},
-	},
+	// // jwt-tokenvalidationparameters-no-expiry-validation
 
-	// // jwt-tokenvalidationparameters-no-expiry-validation 2
-	Rule{
-		ExactMatch:    regexp2.MustCompile(`(?s)((?:ValidateLifetime|RequireExpirationTime)\s*=\s*false)`, 0),
-		CWE:           "CWE-613",
-		AverageCVSS:   5.0,
-		Title:         "JWT Token Validation Parameters with No Expiry Validation",
-		Severity:      "WARNING",
-		Description:   "TokenValidationParameters.ValidateLifetime or RequireExpirationTime set to false, allowing use of expired JWT tokens, which has security implications.",
-		Recomendation: "Set ValidateLifetime and RequireExpirationTime to true to ensure JWT token lifetime validation.",
-		NotAnd: []*regexp2.Regexp{
-			regexp2.MustCompile(`(?s)(ValidateLifetime|RequireExpirationTime)\s*=\s*true`, 0),
-		},
-	},
+	// Rule{
+	// 	PatternInside: regexp2.MustCompile(`(?s)\.AddJwtBearer\s*\([^)]*\)\s*\{.*?TokenValidationParameters\s*=\s*new\s+TokenValidationParameters\s*\{.*?\}`, 0),
+	// 	ExactMatch:    regexp2.MustCompile(`(?s)((?:ValidateLifetime|RequireExpirationTime)\s*=\s*false)`, 0),
+	// 	CWE:           "CWE-613",
+	// 	AverageCVSS:   5.0,
+	// 	Title:         "JWT Token Validation Parameters with No Expiry Validation",
+	// 	Severity:      "WARNING",
+	// 	Description:   "TokenValidationParameters.ValidateLifetime or RequireExpirationTime set to false, allowing use of expired JWT tokens, which has security implications.",
+	// 	Recomendation: "Set ValidateLifetime and RequireExpirationTime to true to ensure JWT token lifetime validation.",
+	// 	NotAnd: []*regexp2.Regexp{
+	// 		regexp2.MustCompile(`(?s)(ValidateLifetime|RequireExpirationTime)\s*=\s*true`, 0),
+	// 	},
+	// },
 
 	// // misconfigured-lockout-option
 	// Rule{
@@ -387,21 +374,17 @@ var CsharpRules []engine.Rule = []engine.Rule{
 	// },
 
 	// razor-use-of-htmlstring
-	// Rule{
-	// 	// ExactMatch:    regexp2.MustCompile(`new\s+(?:[\w\.]+\.)?HtmlString\s*\((?![^)]*(?:HtmlEncode|Encode)\s*\()[^)]*\)|@\(new\s+(?:[\w\.]+\.)?HtmlString\s*\((?![^)]*(?:HtmlEncode|Encode)\s*\()[^)]*\)\)`, 0),
-	// 	Or: []*regexp2.Regexp{
-	// 		regexp2.MustCompile(`new\s+(?:[A-Za-z_][\w\.]*\.)?HtmlString\s*\([^)]*\)\s*\)`, 0),
-	// 		regexp2.MustCompile(`@\s*\(\s*new\s+(?:[A-Za-z_][\w\.]*\.)?HtmlString\s*\([^)]*\)\s*\)*`, 0),
-	// 	},
-	// 	NotOr: []*regexp2.Regexp{
-	// 		regexp2.MustCompile(`new\s+(?:[A-Za-z_][\w\.]*\.)?HtmlString\s*\(\s*(?:\w*\.)?(?:HtmlEncode|Encode)\s*\([^)]*\)\s*\)`, 0),
-	// 		regexp2.MustCompile(`@\s*\(\s*new\s+(?:[A-Za-z_][\w\.]*\.)?HtmlString\s*\(\s*(?:\w*\.)?(?:HtmlEncode|Encode)\s*\([^)]*\)\s*\)\s*\)`, 0),
-	// 	},
-	// 	CWE:           "CWE-116",
-	// 	AverageCVSS:   7,
-	// 	Description:   "ASP.NET Core MVC provides an HtmlString class which isn't automatically encoded upon output. This should never be used in combination with untrusted input as this will expose an XSS vulnerability.",
-	// 	Recomendation: "Avoid using HtmlString with untrusted input. Always sanitize or encode input with HtmlEncode/Encode before constructing an HtmlString.",
-	// },
+	Rule{
+		PatternNotInside: regexp2.MustCompile(`@\(new\s(?:[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*\.)?HtmlString\((?:[^()]+|\([^()]*\))*?(?:HtmlEncode|Encode)\((?:[^()]+|\([^()]*\))*\)(?:[^()]+|\([^()]*\))*\)\)|new\s(?:[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*\.)?HtmlString\((?:[^()]+|\([^()]*\))*?(?:HtmlEncode|Encode)\((?:[^()]+|\([^()]*\))*\)(?:[^()]+|\([^()]*\))*\)\s*;`, 0),
+		Or: []*regexp2.Regexp{
+			regexp2.MustCompile(`(?s)new\s[A-Za-z0-9_\.]*HtmlString\([^;]*\)\s*;`, 0),
+			regexp2.MustCompile(`@\(new\s(?:[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*\.)?HtmlString\((?:[^()]+|\([^()]*\))*\)\)`, 0),
+		},
+		CWE:           "CWE-116",
+		AverageCVSS:   7,
+		Description:   "ASP.NET Core MVC provides an HtmlString class which isn't automatically encoded upon output. This should never be used in combination with untrusted input as this will expose an XSS vulnerability.",
+		Recomendation: "Avoid using HtmlString with untrusted input. Always sanitize or encode input with HtmlEncode/Encode before constructing an HtmlString.",
+	},
 
 	// // missing-hsts-header pt 1
 	// Rule{

@@ -23,6 +23,8 @@ type Rule struct {
 	Auxiliary []*regexp2.Regexp
 
 	PatternInside *regexp2.Regexp
+
+	PatternNotInside *regexp2.Regexp
 	// And evaluate that each expresion on list is true
 	And []*regexp2.Regexp
 
@@ -68,26 +70,28 @@ func (r Rule) Match(inputFile engine.InputFile) ([]engine.Issue, error) {
 	// Get PatternInside line ranges once for all rule evaluations
 	lineRanges, _ := evaluatePatternInside(inputFile.Content, r)
 
+	notLineRanges, _ := evaluatePatternNotInside(inputFile.Content, r)
+
 	if r.IsAndMatch() {
-		i, err := runAndRule(inputFile, r, info, lineRanges)
+		i, err := runAndRule(inputFile, r, info, lineRanges, notLineRanges)
 		if err != nil {
 			return nil, fmt.Errorf("failed to run and rule: %w", err)
 		}
 		issues = append(issues, i...)
 	} else if r.IsOrMatch() {
-		i, err := runOrRule(inputFile, r, info, lineRanges)
+		i, err := runOrRule(inputFile, r, info, lineRanges, notLineRanges)
 		if err != nil {
 			return nil, fmt.Errorf("failed to run or rule: %w", err)
 		}
 		issues = append(issues, i...)
 	} else if r.IsNotMatch() {
-		i, err := runNotRule(inputFile, r.NotMatch, info, r, lineRanges)
+		i, err := runNotRule(inputFile, r.NotMatch, info, r, lineRanges, notLineRanges)
 		if err != nil {
 			return nil, fmt.Errorf("failed to run not rule: %w", err)
 		}
 		issues = append(issues, i...)
 	} else {
-		i, err := runSingleRule(inputFile, r.ExactMatch, info, r, lineRanges)
+		i, err := runSingleRule(inputFile, r.ExactMatch, info, r, lineRanges, notLineRanges)
 		if err != nil {
 			return nil, fmt.Errorf("failed to run single rule: %w", err)
 		}
@@ -128,6 +132,10 @@ func (r Rule) HavePatternInside() bool {
 	return r.PatternInside != nil
 }
 
+func (r Rule) HavePatternNotInside() bool {
+	return r.PatternNotInside != nil
+}
+
 func evaluateAuxiliary(content string, rule Rule) (bool, error) {
 	for _, expr := range rule.Auxiliary {
 		if expr == nil {
@@ -147,6 +155,34 @@ func evaluatePatternInside(content string, rule Rule) ([]string, error) {
 		return nil, nil
 	}
 	another_pattern, _ := regexp.Compile(rule.PatternInside.String())
+	results := another_pattern.FindAllStringIndex(content, -1)
+	if len(results) == 0 {
+		return nil, nil
+	}
+
+	// Convert character indices to line number ranges
+	lines := strings.Split(content, "\n")
+	lineRanges := make([]string, 0, len(results))
+	for _, result := range results {
+		startLine := getLineNumber(result[0], lines) + 1 // 1-based line numbers
+		endLine := getLineNumber(result[1]-1, lines) + 1 // Use end-1 to get last line of match
+		if startLine <= endLine {
+			lineRanges = append(lineRanges, fmt.Sprintf("%d,%d", startLine, endLine))
+		}
+	}
+
+	if len(lineRanges) == 0 {
+		return nil, nil
+	}
+
+	return lineRanges, nil
+}
+
+func evaluatePatternNotInside(content string, rule Rule) ([]string, error) {
+	if !rule.HavePatternNotInside() {
+		return nil, nil
+	}
+	another_pattern, _ := regexp.Compile(rule.PatternNotInside.String())
 	results := another_pattern.FindAllStringIndex(content, -1)
 	if len(results) == 0 {
 		return nil, nil
@@ -220,7 +256,7 @@ func evaluateNotClauses(fileContent string, rule Rule) (bool, error) {
 	return true, nil
 }
 
-func runNotRule(inputFile engine.InputFile, expr *regexp2.Regexp, info engine.Info, rule Rule, lineRanges []string) ([]engine.Issue, error) {
+func runNotRule(inputFile engine.InputFile, expr *regexp2.Regexp, info engine.Info, rule Rule, lineRanges []string, notLineRanges []string) ([]engine.Issue, error) {
 	issues := make([]engine.Issue, 0)
 
 	another_expr, err := regexp.Compile(expr.String())
@@ -235,6 +271,10 @@ func runNotRule(inputFile engine.InputFile, expr *regexp2.Regexp, info engine.In
 	for _, result := range results {
 		evidence := inputFile.CollectEvidenceSample(result[0])
 		if rule.HavePatternInside() && !isLineWithinRanges(evidence.Line, lineRanges) {
+			continue
+		}
+
+		if rule.HavePatternNotInside() && isLineWithinRanges(evidence.Line, notLineRanges) {
 			continue
 		}
 
@@ -257,9 +297,8 @@ func runNotRule(inputFile engine.InputFile, expr *regexp2.Regexp, info engine.In
 	return issues, nil
 }
 
-func runRule(inputFile engine.InputFile, expr *regexp2.Regexp, info engine.Info, rule Rule, fn excludeFn, lineRanges []string) ([]engine.Issue, error) {
+func runRule(inputFile engine.InputFile, expr *regexp2.Regexp, info engine.Info, rule Rule, fn excludeFn, lineRanges []string, notLineRanges []string) ([]engine.Issue, error) {
 	issues := make([]engine.Issue, 0)
-
 	another_expr, err := regexp.Compile(expr.String())
 	if err != nil {
 		return nil, fmt.Errorf("failed to compile pattern: %w", err)
@@ -274,6 +313,13 @@ func runRule(inputFile engine.InputFile, expr *regexp2.Regexp, info engine.Info,
 
 		if rule.HavePatternInside() {
 			if len(lineRanges) == 0 || !isLineWithinRanges(evidence.Line, lineRanges) {
+				continue
+			}
+		}
+
+		if rule.HavePatternNotInside() {
+
+			if len(notLineRanges) == 0 || isLineWithinRanges(evidence.Line, notLineRanges) {
 				continue
 			}
 		}
@@ -361,17 +407,17 @@ func isLineWithinRanges(line int, lineRanges []string) bool {
 	return false
 }
 
-func runSingleRule(inputFile engine.InputFile, expr *regexp2.Regexp, info engine.Info, r Rule, lineRanges []string) ([]engine.Issue, error) {
+func runSingleRule(inputFile engine.InputFile, expr *regexp2.Regexp, info engine.Info, r Rule, lineRanges []string, notLineRanges []string) ([]engine.Issue, error) {
 	return runRule(inputFile, expr, info, r, func(content string, r Rule) (bool, error) {
 		return evaluateNotClauses(content, r)
-	}, lineRanges)
+	}, lineRanges, notLineRanges)
 }
 
-func runAndRule(inputFile engine.InputFile, rule Rule, info engine.Info, lineRanges []string) ([]engine.Issue, error) {
+func runAndRule(inputFile engine.InputFile, rule Rule, info engine.Info, lineRanges []string, notLineRanges []string) ([]engine.Issue, error) {
 	allIssues := make([]engine.Issue, 0)
 
 	for _, expr := range rule.And {
-		issues, err := runRule(inputFile, expr, info, rule, nil, lineRanges)
+		issues, err := runRule(inputFile, expr, info, rule, nil, lineRanges, notLineRanges)
 		if err != nil {
 			return nil, fmt.Errorf("failed to run rule: %w", err)
 		}
@@ -395,10 +441,10 @@ func runAndRule(inputFile engine.InputFile, rule Rule, info engine.Info, lineRan
 	return allIssues, nil
 }
 
-func runOrRule(inputFile engine.InputFile, rule Rule, info engine.Info, lineRanges []string) ([]engine.Issue, error) {
+func runOrRule(inputFile engine.InputFile, rule Rule, info engine.Info, lineRanges []string, notLineRanges []string) ([]engine.Issue, error) {
 	issues := make([]engine.Issue, 0)
 	for _, rawExpression := range rule.Or {
-		i, err := runSingleRule(inputFile, rawExpression, info, rule, lineRanges)
+		i, err := runSingleRule(inputFile, rawExpression, info, rule, lineRanges, notLineRanges)
 		if err != nil {
 			return nil, fmt.Errorf("failed to run single rule: %w", err)
 		}
