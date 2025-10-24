@@ -213,7 +213,7 @@ var CsharpRules []engine.Rule = []engine.Rule{
 	// 	AverageCVSS:   6.0,
 	// 	Title:         "Insecure DataContractResolver Implementation",
 	// 	Severity:      "WARNING",
-	// 	Description:   "Implementing a custom DataContractResolver can be dangerous if used with untrusted data, as malicious types may cause unexpected behavior during deserialization (CWE-502, OWASP A08:2017/A08:2021). Only use DataContractResolver if you are completely sure of what information is being serialized. Reference: https://docs.microsoft.com/en-us/dotnet/standard/serialization/binaryformatter-security-guide",
+	// 	Description:   "Only use DataContractResolver if you are completely sure of what information is being serialized. Malicious types can cause unexpected behavior",
 	// 	Recomendation: "Avoid using custom DataContractResolver implementations unless the serialized data is fully trusted and validated. Consider safer serialization alternatives like System.Text.Json or XmlSerializer to mitigate deserialization risks.",
 	// },
 
@@ -226,7 +226,7 @@ var CsharpRules []engine.Rule = []engine.Rule{
 	// 	AverageCVSS:   6.0,
 	// 	Title:         "Insecure fastJSON Deserialization Configuration",
 	// 	Severity:      "WARNING",
-	// 	Description:   "Configuring fastJSON with BadListTypeChecking = false has the potential to be unsafe, as it disables type checking during deserialization, increasing the risk of processing malicious types from untrusted JSON sources (CWE-502, OWASP A08:2017/A08:2021). Reference: https://github.com/mgholam/fastJSON#security-warning-update",
+	// 	Description:   "$type extension has the potential to be unsafe, so use it with common sense and known json sources and not public facing ones to be safe",
 	// 	Recomendation: "Avoid setting BadListTypeChecking = false in JSONParameters. Use fastJSON with trusted JSON sources only, and ensure type checking is enabled to mitigate deserialization risks. Consider safer serialization libraries like System.Text.Json or XmlSerializer.",
 	// },
 
@@ -239,7 +239,7 @@ var CsharpRules []engine.Rule = []engine.Rule{
 	// 	AverageCVSS:   6.0,
 	// 	Title:         "Insecure FsPickler JSON Deserialization",
 	// 	Severity:      "WARNING",
-	// 	Description:   "The FsPickler JSON serializer, created via FsPickler.CreateJsonSerializer(), is dangerous due to its default configuration, which may enable insecure deserialization of untrusted data, potentially leading to arbitrary code execution (CWE-502, OWASP A08:2017/A08:2021). Reference: https://mbraceproject.github.io/FsPickler/tutorial.html#Disabling-Subtype-Resolution",
+	// 	Description:   "The FsPickler is dangerous and is not recommended for data processing. Default configuration tend to insecure deserialization vulnerability",
 	// 	Recomendation: "Avoid using FsPickler.CreateJsonSerializer() with its default configuration. If FsPickler is necessary, explicitly configure it to disable subtype resolution and validate input data. Consider safer serialization libraries like System.Text.Json or XmlSerializer to mitigate deserialization risks.",
 	// 	NotAnd:        []*regexp2.Regexp{},
 	// },
@@ -248,7 +248,8 @@ var CsharpRules []engine.Rule = []engine.Rule{
 
 	// Rule{
 	// 	Or: []*regexp2.Regexp{
-	// 		regexp2.MustCompile(`(?s)(new\s+BinaryServerFormatterSinkProvider\s*\{\s*TypeFilterLevel\s*=\s*TypeFilterLevel\.(Full|Low)\s*\}\s*;|\w+\s*=\s*new\s+BinaryServerFormatterSinkProvider\s*\(.*?\)\s*;.*?\w+\.TypeFilterLevel\s*=\s*TypeFilterLevel\.(Full|Low)\s*;)`, 0),
+	// 		regexp2.MustCompile(`TypeFilterLevel\s*=\s*[a-zA-Z0-9_\.]+\.TypeFilterLevel\.Full;`, 0),
+	// 		regexp2.MustCompile(`(?s)(new\s+BinaryServerFormatterSinkProvider\s*\{\s*TypeFilterLevel\s*=\s*TypeFilterLevel\.(Full|Low)\s*\}\s*;)`, 0),
 	// 		regexp2.MustCompile(`(?s)\w+\["typeFilterLevel"\]\s*=\s*"(Full|Low)"\s*;`, 0),
 	// 	},
 	// 	CWE:           "CWE-502",
@@ -268,7 +269,7 @@ var CsharpRules []engine.Rule = []engine.Rule{
 	// 	AverageCVSS:   5.0,
 	// 	Title:         "Insecure JavaScriptSerializer with SimpleTypeResolver",
 	// 	Severity:      "ERROR",
-	// 	Description:   "Using SimpleTypeResolver with JavaScriptSerializer is insecure and should not be used, as it allows deserialization of untrusted JSON data, potentially enabling remote code execution (RCE) by malicious clients (CWE-502, OWASP A08:2017/A08:2021). Reference: https://docs.microsoft.com/en-us/dotnet/api/system.web.script.serialization.simpletyperesolver?view=netframework-4.8#remarks",
+	// 	Description:   "The SimpleTypeResolver class is insecure and should not be used. Using SimpleTypeResolver to deserialize JSON could allow the remote client to execute malicious code within the app and take control of the web server.",
 	// 	Recomendation: "Avoid using SimpleTypeResolver with JavaScriptSerializer. Use safer serialization libraries like System.Text.Json or XmlSerializer, and validate input data. If JavaScriptSerializer is necessary, avoid SimpleTypeResolver and ensure strict type constraints with trusted sources.",
 	// },
 
@@ -281,7 +282,7 @@ var CsharpRules []engine.Rule = []engine.Rule{
 	// 	AverageCVSS:   6.0,
 	// 	Title:         "Insecure LosFormatter Deserialization",
 	// 	Severity:      "WARNING",
-	// 	Description:   "The LosFormatter type is dangerous and is not recommended for data processing. It is inherently insecure and cannot be made secure, posing risks of deserialization vulnerabilities (CWE-502, OWASP A08:2017/A08:2021). Applications should stop using LosFormatter, even with trusted data. Reference: https://docs.microsoft.com/en-us/dotnet/api/system.web.ui.losformatter?view=netframework-4.8",
+	// 	Description:   "The LosFormatter type is dangerous and is not recommended for data processing. Applications should stop using LosFormatter as soon as possible, even if they believe the data they're processing to be trustworthy. LosFormatter is insecure and can't be made secure",
 	// 	Recomendation: "Replace LosFormatter with safer serialization alternatives, such as System.Text.Json or XmlSerializer, which are less susceptible to deserialization attacks. Ensure input data is validated and sanitized before processing.",
 	// },
 
@@ -294,7 +295,7 @@ var CsharpRules []engine.Rule = []engine.Rule{
 	// 	AverageCVSS:   6.0,
 	// 	Title:         "Insecure NetDataContractSerializer Deserialization",
 	// 	Severity:      "WARNING",
-	// 	Description:   "The NetDataContractSerializer type is dangerous and is not recommended for data processing. It is inherently insecure and cannot be made secure, posing risks of deserialization vulnerabilities (CWE-502, OWASP A08:2017/A08:2021). Applications should stop using NetDataContractSerializer, even with trusted data. Reference: https://docs.microsoft.com/en-us/dotnet/api/system.runtime.serialization.netdatacontractserializer?view=netframework-4.8#security",
+	// 	Description:   "The NetDataContractSerializer type is dangerous and is not recommended for data processing. Applications should stop using NetDataContractSerializer as soon as possible, even if they believe the data they're processing to be trustworthy. NetDataContractSerializer is insecure and can't be made secure",
 	// 	Recomendation: "Replace NetDataContractSerializer with safer serialization alternatives, such as System.Text.Json or XmlSerializer, which are less susceptible to deserialization attacks. Ensure input data is validated and sanitized before processing.",
 	// },
 
@@ -307,7 +308,7 @@ var CsharpRules []engine.Rule = []engine.Rule{
 	// 	AverageCVSS:   6.0,
 	// 	Title:         "Insecure SoapFormatter Deserialization",
 	// 	Severity:      "WARNING",
-	// 	Description:   "The SoapFormatter type is dangerous and is not recommended for data processing. It is inherently insecure and cannot be made secure, posing risks of deserialization vulnerabilities (CWE-502, OWASP A08:2017/A08:2021). Applications should stop using SoapFormatter, even with trusted data. Reference: https://docs.microsoft.com/en-us/dotnet/api/system.runtime.serialization.formatters.soap.soapformatter?view=netframework-4.8#remarks",
+	// 	Description:   "The SoapFormatter type is dangerous and is not recommended for data processing. Applications should stop using SoapFormatter as soon as possible, even if they believe the data they're processing to be trustworthy. SoapFormatter is insecure and can't be made secure",
 	// 	Recomendation: "Replace SoapFormatter with safer serialization alternatives, such as System.Text.Json or XmlSerializer, which are less susceptible to deserialization attacks. Ensure input data is validated and sanitized before processing.",
 	// },
 
@@ -315,14 +316,14 @@ var CsharpRules []engine.Rule = []engine.Rule{
 
 	// Rule{
 	// 	Or: []*regexp2.Regexp{
-	// 		regexp2.MustCompile(`(?s)MemoryMarshal\.CreateSpan\s*\([^()]*\)\s*;`, 0),
-	// 		regexp2.MustCompile(`(?s)MemoryMarshal\.CreateReadOnlySpan\s*\([^()]*\)\s*;`, 0),
+	// 		regexp2.MustCompile(`(?s)MemoryMarshal\.CreateSpan\s*\(`, 0),
+	// 		regexp2.MustCompile(`(?s)MemoryMarshal\.CreateReadOnlySpan\s*\(`, 0),
 	// 	},
 	// 	CWE:           "CWE-125",
 	// 	AverageCVSS:   5.0,
 	// 	Title:         "Insecure MemoryMarshal CreateSpan Usage",
 	// 	Severity:      "WARNING",
-	// 	Description:   "MemoryMarshal.CreateSpan and MemoryMarshal.CreateReadOnlySpan should be used with caution, as the length argument is not checked, potentially leading to out-of-bounds read vulnerabilities (CWE-125, OWASP A04:2021). References: https://docs.microsoft.com/en-us/dotnet/api/system.runtime.interopservices.memorymarshal.createspan?view=net-6.0, https://docs.microsoft.com/en-us/dotnet/api/system.runtime.interopservices.memorymarshal.createreadonlyspan?view=net-6.0",
+	// 	Description:   "MemoryMarshal.CreateSpan and MemoryMarshal.CreateReadOnlySpan should be used with caution, as the length argument is not checked.",
 	// 	Recomendation: "Ensure the length argument in MemoryMarshal.CreateSpan and MemoryMarshal.CreateReadOnlySpan is validated to prevent out-of-bounds reads. Consider safer memory management alternatives or add explicit bounds checking before calling these methods.",
 	// },
 
@@ -373,18 +374,18 @@ var CsharpRules []engine.Rule = []engine.Rule{
 	// 	Recomendation: "Remove AddDirectoryBrowser() and UseDirectoryBrowser() calls from production code. Use static file middleware with strict access rules, or explicitly serve only necessary files.",
 	// },
 
-	// razor-use-of-htmlstring
-	Rule{
-		PatternNotInside: regexp2.MustCompile(`@\(new\s(?:[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*\.)?HtmlString\((?:[^()]+|\([^()]*\))*?(?:HtmlEncode|Encode)\((?:[^()]+|\([^()]*\))*\)(?:[^()]+|\([^()]*\))*\)\)|new\s(?:[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*\.)?HtmlString\((?:[^()]+|\([^()]*\))*?(?:HtmlEncode|Encode)\((?:[^()]+|\([^()]*\))*\)(?:[^()]+|\([^()]*\))*\)\s*;`, 0),
-		Or: []*regexp2.Regexp{
-			regexp2.MustCompile(`(?s)new\s[A-Za-z0-9_\.]*HtmlString\([^;]*\)\s*;`, 0),
-			regexp2.MustCompile(`@\(new\s(?:[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*\.)?HtmlString\((?:[^()]+|\([^()]*\))*\)\)`, 0),
-		},
-		CWE:           "CWE-116",
-		AverageCVSS:   7,
-		Description:   "ASP.NET Core MVC provides an HtmlString class which isn't automatically encoded upon output. This should never be used in combination with untrusted input as this will expose an XSS vulnerability.",
-		Recomendation: "Avoid using HtmlString with untrusted input. Always sanitize or encode input with HtmlEncode/Encode before constructing an HtmlString.",
-	},
+	// // razor-use-of-htmlstring
+	// Rule{
+	// 	PatternNotInside: regexp2.MustCompile(`@\(new\s(?:[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*\.)?HtmlString\((?:[^()]+|\([^()]*\))*?(?:HtmlEncode|Encode)\((?:[^()]+|\([^()]*\))*\)(?:[^()]+|\([^()]*\))*\)\)|new\s(?:[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*\.)?HtmlString\((?:[^()]+|\([^()]*\))*?(?:HtmlEncode|Encode)\((?:[^()]+|\([^()]*\))*\)(?:[^()]+|\([^()]*\))*\)\s*;`, 0),
+	// 	Or: []*regexp2.Regexp{
+	// 		regexp2.MustCompile(`(?s)new\s[A-Za-z0-9_\.]*HtmlString\([^;]*\)\s*;`, 0),
+	// 		regexp2.MustCompile(`@\(new\s(?:[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*\.)?HtmlString\((?:[^()]+|\([^()]*\))*\)\)`, 0),
+	// 	},
+	// 	CWE:           "CWE-116",
+	// 	AverageCVSS:   7,
+	// 	Description:   "ASP.NET Core MVC provides an HtmlString class which isn't automatically encoded upon output. This should never be used in combination with untrusted input as this will expose an XSS vulnerability.",
+	// 	Recomendation: "Avoid using HtmlString with untrusted input. Always sanitize or encode input with HtmlEncode/Encode before constructing an HtmlString.",
+	// },
 
 	// // missing-hsts-header pt 1
 	// Rule{
@@ -429,6 +430,7 @@ var CsharpRules []engine.Rule = []engine.Rule{
 	// },
 
 	// // insecure-newtonsoft-deserialization
+
 	// Rule{
 	// 	Or: []*regexp2.Regexp{
 	// 		// Pattern 1: Inline JsonSerializerSettings with TypeNameHandling
@@ -560,4 +562,17 @@ var CsharpRules []engine.Rule = []engine.Rule{
 	// 	Description:   "The code constructs an OS command using externally-influenced input and executes it via Process.Start or ProcessStartInfo, which can lead to command injection.",
 	// 	Recomendation: "Avoid passing user-controllable data to Process.Start or StartInfo.FileName/Arguments. Use allowlists and strong validation, or safer APIs.",
 	// },
+
+	// regular-expression-dos-infinite-timeout
+
+	Rule{
+		Auxiliary:     []*regexp2.Regexp{regexp2.MustCompile(`(?s)using\s+System\.Text\.RegularExpressions\s+;`, 0)},
+		ExactMatch:    regexp2.MustCompile(`(?s)(\w+\s*=\s*(DES|RC2)\.Create\s*\(\s*(?:"[^"]*")?\s*\))`, 0),
+		CWE:           "CWE-327",
+		AverageCVSS:   5.3,
+		Title:         "Use of Deprecated Cipher Algorithm (DES & RC2)",
+		Severity:      "WARNING",
+		Description:   "Usage of deprecated cipher algorithm detected. Use Aes or ChaCha20Poly1305 instead.",
+		Recomendation: "Use secure algorithms like Aes.Create() with a strong key size (e.g., 256-bit) instead of DES.",
+	},
 }
